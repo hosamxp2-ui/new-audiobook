@@ -1,1 +1,59 @@
+name: Build Android APK
 
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+
+      - name: Prepare www folder
+        run: |
+          mkdir -p www
+          for f in index.html sw.js manifest.json; do
+            if [ -f "$f" ] && [ ! -f "www/$f" ]; then cp "$f" "www/$f"; fi
+          done
+          test -f www/index.html
+
+      - name: Install dependencies
+        run: npm install
+      - name: Bundle native bridge
+        run: npm run build:web
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Add background-playback permissions
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i 's#<application#<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />\n    <uses-permission android:name="android.permission.WAKE_LOCK" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <application#' "$M"
+          grep -c "FOREGROUND_SERVICE_MEDIA_PLAYBACK" "$M"
+
+      - name: Sync web assets and plugins
+        run: npx cap sync android
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: audiobook-player-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
