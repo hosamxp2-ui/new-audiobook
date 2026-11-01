@@ -1,1 +1,6 @@
-
+{
+  "appId": "com.audiobook.player",
+  "appName": "Audiobook Player",
+  "webDir": "www",
+  "android": { "allowMixedContent": false }
+}
