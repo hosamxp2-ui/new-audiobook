@@ -259,7 +259,7 @@ button:disabled{opacity:.4;pointer-events:none}
 
 <script>
 'use strict';
-const $=s=>document.querySelector(s),au=$('#au'),VER='7.0';
+const $=s=>document.querySelector(s),au=$('#au'),VER='8.0';
 
 const LS=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},SV=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch{if(!SV.w){SV.w=1;setTimeout(()=>{toast(t('quota'));SV.w=0},0)}return false}};
 function loadLib(){
@@ -340,7 +340,7 @@ const idle=()=>new Promise(r=>'requestIdleCallback'in window?requestIdleCallback
 const errKey=e=>/Security|NotAllowed/.test(e?.name||'')?'blocked':'cantRead';
 function busy(m){$('#busyT').textContent=m;$('#busy').hidden=false}
 const busyOff=()=>{$('#busy').hidden=true};
-$('#busyX').onclick=()=>{if(scanSt)scanSt.abort=true};
+$('#busyX').onclick=()=>{if(scanSt){scanSt.abort=true;if(window.NativeFolders)NativeFolders.cancel().catch(()=>{})}};
 function idx(){
  if(IX&&idxVer===libVer)return IX;
  const all=new Map(),direct=new Map(),subs=new Map(),push=(m,k,v)=>{const a=m.get(k);a?a.push(v):m.set(k,[v])};
@@ -361,7 +361,7 @@ async function ingest(id,items,merge){
   if(!merge)for(const k in lib.files)if(lib.files[k].r===id){old[k]=lib.files[k];delete lib.files[k];delete fobjs[k]}
   for(let i=0;i<total;i++){
    const it=items[i],k=id+'/'+it.rel,o=old[k]||lib.files[k]||{};
-   lib.files[k]={n:it.rel.slice(it.rel.lastIndexOf('/')+1),r:id,p:it.rel,s:it.f?it.f.size:o.s,m:it.f?it.f.lastModified:o.m};
+   lib.files[k]={n:it.rel.slice(it.rel.lastIndexOf('/')+1),r:id,p:it.rel,s:it.f?it.f.size:(it.s!=null?it.s:o.s),m:it.f?it.f.lastModified:(it.m!=null?it.m:o.m)};
    if(it.f)fobjs[k]=it.f;
    if(i%400===399){busy(t('indexing',i+1,total));await idle()}
   }
@@ -389,7 +389,7 @@ async function scanHandle(id){
  if(!out.length)toast(t('noAudio'));else if(st.over)toast(t('tooMany',MAXF));else if(st.skipped)toast(t('skipped',st.skipped));
 }
 async function addDir(){
- if(window.__native)return $('#fFiles').click();
+ if(window.__native){if(window.NativeFolders)return addNative();return $('#fFiles').click()}
  if(!window.showDirectoryPicker){pending=null;return $('#fDir').click()}
  let h;
  try{h=await showDirectoryPicker({mode:'read'})}catch(e){if(e.name!=='AbortError')toast(t(errKey(e)));return}
@@ -429,6 +429,7 @@ async function ensureRoot(id){
  try{if(await rootH[id].requestPermission({mode:'read'})==='granted'){live.add(id);renderLib();scanHandle(id).catch(()=>{})}}catch{}
 }
 async function reconnect(id){
+ const r0=lib.roots.find(x=>x.id===id);if(r0&&r0.native)return reconnectNative(r0);
  await ensureRoot(id);if(live.has(id))return;
  const r=lib.roots.find(x=>x.id===id);
  if(window.showDirectoryPicker&&r&&r.fs){
@@ -447,6 +448,7 @@ function reconnectAll(){
 }
 function removeRoot(id){
  if(!confirm(t('confirmRm',rootName(id))))return;
+ const rm=lib.roots.find(r=>r.id===id);if(rm&&rm.native&&window.NativeFolders)NativeFolders.release(rm.uri).catch(()=>{});
  lib.roots=lib.roots.filter(r=>r.id!==id);
  for(const k in lib.files)if(lib.files[k].r===id){delete lib.files[k];delete fobjs[k]}
  live.delete(id);libVer++;saveLib();cur=[];renderLib();renderSettings();
@@ -454,15 +456,52 @@ function removeRoot(id){
 async function rescanAll(){
  let n=0;
  for(const r of lib.roots){if(!rootH[r.id])continue;try{if(await rootH[r.id].requestPermission({mode:'read'})==='granted'){live.add(r.id);await scanHandle(r.id);n++}}catch{}}
+ for(const r of lib.roots){if(r.native&&window.NativeFolders){live.add(r.id);await scanNative(r.id);n++}}
  toast(t(n?'scanned':'pickerNo'));
 }
 async function bgScan(){
  for(const r of lib.roots){if(!r.fs||!live.has(r.id)||!rootH[r.id]||Date.now()-(r.t||0)<6e5)continue;await scanHandle(r.id)}
+ for(const r of lib.roots){if(r.native&&live.has(r.id)&&Date.now()-(r.t||0)>=6e5)await scanNative(r.id)}
 }
 /* files are resolved on demand and never cached (no per-file handle retention) */
+/* ---------- native Android folders (Capacitor FolderAccess plugin: SD card, USB, any folder) ---------- */
+const isNative=rid=>{const r=lib.roots.find(x=>x.id===rid);return !!(r&&r.native)};
+const nUrl=async(rid,rel)=>{const r=lib.roots.find(x=>x.id===rid);return(await NativeFolders.baseUrl())+'/f?t='+encodeURIComponent(r.uri)+'&p='+encodeURIComponent(rel)};
+/* File-like object: streamed over the private loopback server, so seeking works and nothing is copied */
+async function nativeFile(k){
+ const F=lib.files[k],url=await nUrl(F.r,F.p);
+ return{name:F.n,size:F.s||0,lastModified:F.m||0,url,slice:(a,b)=>({arrayBuffer:()=>fetch(url,{headers:{Range:'bytes='+a+'-'+(b-1)}}).then(x=>x.arrayBuffer())})};
+}
+async function scanNative(id){
+ const r=lib.roots.find(x=>x.id===id);if(!r||!window.NativeFolders)return;
+ const out=[],cov=[];scanSt={abort:false};busy(t('scanning',0));
+ let res;
+ try{res=await NativeFolders.listAudio(r.uri,ch=>{for(const it of ch.items||[])out.push(it);for(const c of ch.covers||[])cov.push(c);busy(t('scanning',out.length))})}
+ catch(e){busyOff();scanSt=null;live.delete(id);renderLib();renderSettings();return toast(t('cantRead'))}
+ scanSt=null;
+ if(res&&res.cancelled){busyOff();return toast(t('stopped'))}
+ for(const c of cov){const i=c.rel.lastIndexOf('/'),d=i<0?'':c.rel.slice(0,i);covers[id+(d?'/'+d:'')]={native:1,rel:c.rel,root:id}}
+ live.add(id);
+ try{await ingest(id,out.map(it=>({rel:it.rel,s:it.size,m:it.mod})))}catch{busyOff();return toast(t('oops'))}
+ r.t=Date.now();saveLib();
+ if(!out.length)toast(t('noAudio'));else if(res&&res.over)toast(t('tooMany',out.length));
+}
+async function addNative(){
+ let r;
+ try{r=await NativeFolders.pickFolder()}catch(e){if(!/cancel/i.test((e&&e.message)||''))toast(t('cantRead'));return}
+ let root=lib.roots.find(x=>x.uri===r.uri);
+ if(!root){root={id:'r'+Date.now().toString(36),name:r.name,native:1,uri:r.uri};lib.roots.push(root)}
+ live.add(root.id);await scanNative(root.id);
+ if(!Object.keys(lib.files).some(k=>lib.files[k].r===root.id)){lib.roots=lib.roots.filter(x=>x.id!==root.id);saveLib();renderSettings();renderLib()}
+}
+async function reconnectNative(root){
+ try{const r=await NativeFolders.pickFolder(root.uri);root.uri=r.uri;saveLib()}catch(e){return}
+ live.add(root.id);await scanNative(root.id);
+}
 async function getFile(k){
  if(fobjs[k])return fobjs[k];
- const F=lib.files[k];if(!F||!live.has(F.r)||!rootH[F.r])return null;
+ const F=lib.files[k];if(F&&isNative(F.r))return live.has(F.r)?nativeFile(k):null;
+ if(!F||!live.has(F.r)||!rootH[F.r])return null;
  try{let d=rootH[F.r];const p=F.p.split('/');for(let i=0;i<p.length-1;i++)d=await d.getDirectoryHandle(p[i]);return await(await d.getFileHandle(p[p.length-1])).getFile()}catch{return null}
 }
 async function boot(){
@@ -470,6 +509,7 @@ async function boot(){
   if(!r.fs)continue;
   try{const h=await hget(r.id);if(!h)continue;rootH[r.id]=h;if(await h.queryPermission({mode:'read'})==='granted')live.add(r.id)}catch{}
  }
+ for(const r of lib.roots){if(r.native&&window.NativeFolders){try{const a=await NativeFolders.hasAccess(r.uri);if(a&&a.ok)live.add(r.id)}catch{}}}
  await loadThumbs();booted=true;render();renderSettings();
 }
 /* duration/size probing: one reusable audio element, visible rows first, paced */
@@ -479,7 +519,7 @@ async function probeOne(p,k){
  const F=lib.files[k],f=await getFile(k);if(!f||!F)return;
  F.s=f.size;F.m=f.lastModified;
  if(prog[k]?.[1])return;
- const u=URL.createObjectURL(f);
+ const u=f.url||URL.createObjectURL(f);
  try{await new Promise(r=>{p.onloadedmetadata=()=>{if(isFinite(p.duration)&&p.duration>0)prog[k]=[prog[k]?.[0]||0,p.duration,prog[k]?.[2]];r()};p.onerror=r;setTimeout(r,4000);p.src=u})}
  finally{p.onloadedmetadata=p.onerror=null;p.removeAttribute('src');p.load();URL.revokeObjectURL(u)}
 }
@@ -889,7 +929,7 @@ function renderSettings(){
   const lc=mk('label'),cc=mk('input');cc.type='checkbox';cc.checked=cfg.covers;cc.onchange=()=>{cfg.covers=cc.checked;saveCfg();renderLib()};lc.append(cc,document.createTextNode(t('coversLbl')));b.append(lc);
   const u=mk('div',' ','info');b.append(u);
   if(navigator.storage&&navigator.storage.estimate)navigator.storage.estimate().then(e=>{u.textContent=t('usage',((e.usage||0)/1048576).toFixed(1)+' MB')}).catch(()=>{});
-  b.append(mk('div',t(window.showDirectoryPicker?'pickerYes':'pickerNo'),'info'));
+  b.append(mk('div',t(window.showDirectoryPicker||window.NativeFolders?'pickerYes':'pickerNo'),'info'));
  }));
  V.append(acc('backup',t('secBackup'),b=>{
   const a=mk('div',null,'add'),e1=mk('button',t('export'),'on'),e2=mk('button',t('import'));
@@ -973,7 +1013,7 @@ async function play(k,q2,startAt,auto=true,open=true){
  save();key=k;queue=q2&&q2.includes(k)?q2:siblings(k);qi=queue.indexOf(k);last=k;SV('ab_last',k);
  const p=prog[k]||[0,0],pos=startAt!=null?startAt:(isDone(p[0],p[1])?0:p[0]);
  if(objUrl)URL.revokeObjectURL(objUrl);
- objUrl=URL.createObjectURL(f);au.volume=1;au.src=objUrl;au.defaultPlaybackRate=cfg.rate;
+ objUrl=f.url||URL.createObjectURL(f);au.volume=1;au.src=objUrl;au.defaultPlaybackRate=cfg.rate;
  au.onloadedmetadata=()=>{prog[k]=[pos,au.duration,Date.now()];au.currentTime=Math.min(pos,Math.max(0,au.duration-1));au.playbackRate=cfg.rate;if(auto)au.play().catch(()=>{});tick()};
  $('#ttl').textContent=nm(k);$('#sub').textContent=folderName(k);$('#mTtl').textContent=nm(k);$('#mSub').textContent=folderName(k);
  setCover(art);loadCh(f,k);renderLib();updateTools();updateMini();
@@ -1114,7 +1154,7 @@ async function coverFile(k){
  const F=lib.files[k];if(!F)return null;
  let dk=k.slice(0,k.lastIndexOf('/'));
  for(let up=0;up<2;up++){
-  if(covers[dk])return covers[dk];
+  if(covers[dk]){const cv=covers[dk];if(cv.native){try{return await(await fetch(await nUrl(cv.root,cv.rel))).blob()}catch{}}else return cv}
   if(rootH[F.r]&&live.has(F.r)){
    try{
     let d=rootH[F.r];const p=dk.split('/').slice(1);
