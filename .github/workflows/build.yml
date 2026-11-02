@@ -51,6 +51,21 @@ jobs:
           sed -i "s/^package .*;/package $APPID;/" "$DIR"/*.java
           cp native-android/network_security_config.xml android/app/src/main/res/xml/
 
+      - name: Notification icons (vector drawables)
+        run: |
+          D=android/app/src/main/res/drawable
+          mkdir -p "$D"
+          vec() { printf '<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">\n  <path android:pathData="%s" %s/>\n</vector>\n' "$2" "$3" > "$D/$1.xml"; }
+          S='android:strokeColor="#FFFFFF" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round"'
+          F='android:fillColor="#FFFFFF"'
+          vec ic_pb_rewind  "M1 4v6h6M3.5 15a9 9 0 1 0 2.1-9.4L1 10" "$S"
+          vec ic_pb_forward "M23 4v6h-6M20.5 15a9 9 0 1 1-2.1-9.4L23 10" "$S"
+          vec ic_pb_play    "M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z" "$F"
+          vec ic_pb_pause   "M7 4h3.5v16H7zM13.5 4H17v16h-3.5z" "$F"
+          vec ic_pb_close   "M18 6L6 18M6 6l12 12" "$S"
+          vec ic_pb_stat    "M3 18v-6a9 9 0 0 1 18 0v6M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" "$S"
+          ls "$D"
+
       - name: Android manifest (permissions + local audio streaming)
         run: |
           M=android/app/src/main/AndroidManifest.xml
