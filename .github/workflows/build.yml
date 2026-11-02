@@ -56,6 +56,9 @@ jobs:
           M=android/app/src/main/AndroidManifest.xml
           sed -i 's#<application#<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />\n    <uses-permission android:name="android.permission.WAKE_LOCK" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <application#' "$M"
           sed -i 's#<application#<application android:networkSecurityConfig="@xml/network_security_config"#' "$M"
+          APPID=$(node -p "require('./capacitor.config.json').appId")
+          sed -i "s#</application>#    <service android:name=\"$APPID.PlaybackService\" android:exported=\"false\" android:foregroundServiceType=\"mediaPlayback\" />\n    </application>#" "$M"
+          grep -c "PlaybackService" "$M"
           grep -c "network_security_config" "$M"
 
       - name: Generate app icons (optional)
