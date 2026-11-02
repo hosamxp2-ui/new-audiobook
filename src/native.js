@@ -24,7 +24,8 @@ if (Capacitor.isNativePlatform()) {
         duration: Math.round((pos.duration || 0) * 1000),
         position: Math.round((pos.position || 0) * 1000),
         rate: pos.playbackRate || 1,
-        playing: state === 'playing'
+        playing: state === 'playing',
+        tracks: !!(handlers.previoustrack || handlers.nexttrack)   // show prev/next buttons only in that mode
       };
       if (art && art !== artSent) { o.artwork = art; artSent = art; }   // send the cover only when it changes
       MediaNotification.update(o).catch(() => {});
@@ -60,9 +61,23 @@ if (Capacitor.isNativePlatform()) {
       case 'rewind': fire('seekbackward'); break;
       case 'forward': fire('seekforward'); break;
       case 'seek': fire('seekto', { seekTime: (e.position || 0) / 1000 }); break;
+      case 'next': fire('nexttrack'); break;
+      case 'prev': fire('previoustrack'); break;
       case 'close': fire('stop'); break;
     }
   });
+
+  /* ---- diagnostics used by Settings -> About -> Test notification ---- */
+  window.NativeMedia = {
+    status: () => MediaNotification.status(),
+    openSettings: () => MediaNotification.openSettings(),
+    test: async () => {
+      await MediaNotification.update({ title: 'Notification test', artist: 'Audiobook Player',
+        duration: 60000, position: 15000, rate: 1, playing: true, tracks: false });
+      await new Promise((r) => setTimeout(r, 1200));
+      return MediaNotification.status();
+    }
+  };
 
   /* ---- custom folders / SD card / USB (Storage Access Framework) ---- */
   let basePromise = null;
