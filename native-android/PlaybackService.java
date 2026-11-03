@@ -5,11 +5,14 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.IntentFilter;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Icon;
+import android.media.AudioManager;
 import android.media.MediaMetadata;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
@@ -28,11 +31,14 @@ public class PlaybackService extends Service {
 
   static class State {
     String title = "", artist = "", album = "";
-    String lRew = "Rewind", lPlay = "Play", lPause = "Pause", lFwd = "Forward", lClose = "Close";
+    String lRew = "Rewind", lPlay = "Play", lPause = "Pause", lFwd = "Forward", lClose = "Close", lPrev = "Previous", lNext = "Next";
     long duration, position;
     float rate = 1f;
-    boolean playing, tracks;
+    boolean playing;
+    /** seek = rewind/forward/close, tracks = prev/next + rewind/forward, tracksClose = prev/next + close */
+    String mode = "seek";
     Bitmap art;
+    boolean tracks() { return !"seek".equals(mode); }
   }
 
   static volatile Listener listener;
@@ -46,6 +52,9 @@ public class PlaybackService extends Service {
   private MediaSession session;
   private NotificationManager nm;
   private boolean foreground = false;
+  private final BroadcastReceiver noisy = new BroadcastReceiver() {
+    @Override public void onReceive(Context c, Intent i) { emit("pause", 0); }   // headphones unplugged / Bluetooth lost
+  };
 
   /** Called by the Capacitor plugin whenever title / position / play state changes. */
   static void update(Context c, State s) {
@@ -89,6 +98,8 @@ public class PlaybackService extends Service {
       @Override public void onCustomAction(String action, Bundle extras) { dispatch(action); }
     });
     session.setActive(true);
+    IntentFilter f = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
+    if (Build.VERSION.SDK_INT >= 33) registerReceiver(noisy, f, Context.RECEIVER_NOT_EXPORTED); else registerReceiver(noisy, f);
   }
 
   @Override
@@ -103,6 +114,7 @@ public class PlaybackService extends Service {
   @Override
   public void onDestroy() {
     instance = null;
+    try { unregisterReceiver(noisy); } catch (Exception ignored) { }
     try { session.release(); } catch (Exception ignored) { }
     super.onDestroy();
   }
@@ -145,20 +157,19 @@ public class PlaybackService extends Service {
     long actions = PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE | PlaybackState.ACTION_PLAY_PAUSE
         | PlaybackState.ACTION_SEEK_TO | PlaybackState.ACTION_REWIND | PlaybackState.ACTION_FAST_FORWARD
         | PlaybackState.ACTION_STOP;
-    if (s.tracks) actions |= PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SKIP_TO_NEXT;
+    if (s.tracks()) actions |= PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SKIP_TO_NEXT;
     // Android 13+ builds the lock-screen / quick-settings buttons from the session, not from the notification:
     // play/pause + prev/next are standard; everything else MUST be a custom action (with our own icons).
-    session.setPlaybackState(new PlaybackState.Builder()
+    PlaybackState.Builder pb = new PlaybackState.Builder()
         .setActions(actions)
         .setState(s.playing ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
-            s.position, s.playing ? s.rate : 0f, SystemClock.elapsedRealtime())
-        .addCustomAction(new PlaybackState.CustomAction.Builder(
-            "rewind", s.lRew, ic("ic_pb_rewind", android.R.drawable.ic_media_rew)).build())
-        .addCustomAction(new PlaybackState.CustomAction.Builder(
-            "forward", s.lFwd, ic("ic_pb_forward", android.R.drawable.ic_media_ff)).build())
-        .addCustomAction(new PlaybackState.CustomAction.Builder(
-            "close", s.lClose, ic("ic_pb_close", android.R.drawable.ic_menu_close_clear_cancel)).build())
-        .build());
+            s.position, s.playing ? s.rate : 0f, SystemClock.elapsedRealtime());
+    // Slots on the system player: [custom0][prev][play][next][custom1]. When prev/next are not enabled the first
+    // custom actions fill their slots. Order decides what is visible.
+    String[] order = "tracksClose".equals(s.mode)
+        ? new String[]{"close", "rewind", "forward"} : new String[]{"rewind", "forward", "close"};
+    for (String n : order) pb.addCustomAction(custom(n, s));
+    session.setPlaybackState(pb.build());
 
     Notification n = base(s).build();
     if (s.playing) {
@@ -203,23 +214,39 @@ public class PlaybackService extends Service {
       b.setContentIntent(PendingIntent.getActivity(this, 0, open,
           PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
     }
-    b.addAction(new Notification.Action.Builder(
-        Icon.createWithResource(this, ic("ic_pb_rewind", android.R.drawable.ic_media_rew)), s.lRew, pi("rewind", 1)).build());
-    if (s.playing) {
-      b.addAction(new Notification.Action.Builder(
-          Icon.createWithResource(this, ic("ic_pb_pause", android.R.drawable.ic_media_pause)), s.lPause, pi("pause", 2)).build());
-    } else {
-      b.addAction(new Notification.Action.Builder(
-          Icon.createWithResource(this, ic("ic_pb_play", android.R.drawable.ic_media_play)), s.lPlay, pi("play", 2)).build());
-    }
-    b.addAction(new Notification.Action.Builder(
-        Icon.createWithResource(this, ic("ic_pb_forward", android.R.drawable.ic_media_ff)), s.lFwd, pi("forward", 3)).build());
-    b.addAction(new Notification.Action.Builder(
-        Icon.createWithResource(this, ic("ic_pb_close", android.R.drawable.ic_menu_close_clear_cancel)), s.lClose, pi("close", 4)).build());
+    String[] acts;
+    int[] compact;
+    if ("tracks".equals(s.mode)) { acts = new String[]{"prev", "rewind", "toggle", "forward", "next"}; compact = new int[]{0, 2, 4}; }
+    else if ("tracksClose".equals(s.mode)) { acts = new String[]{"prev", "toggle", "next", "close"}; compact = new int[]{0, 1, 2}; }
+    else { acts = new String[]{"rewind", "toggle", "forward", "close"}; compact = new int[]{0, 1, 2}; }
+    for (int i = 0; i < acts.length; i++) b.addAction(action(acts[i], s, i + 1));
     b.setStyle(new Notification.MediaStyle()
         .setMediaSession(session.getSessionToken())
-        .setShowActionsInCompactView(0, 1, 2));
+        .setShowActionsInCompactView(compact));
     return b;
+  }
+
+  private PlaybackState.CustomAction custom(String n, State s) {
+    switch (n) {
+      case "rewind": return new PlaybackState.CustomAction.Builder("rewind", s.lRew, ic("ic_pb_rewind", android.R.drawable.ic_media_rew)).build();
+      case "forward": return new PlaybackState.CustomAction.Builder("forward", s.lFwd, ic("ic_pb_forward", android.R.drawable.ic_media_ff)).build();
+      default: return new PlaybackState.CustomAction.Builder("close", s.lClose, ic("ic_pb_close", android.R.drawable.ic_menu_close_clear_cancel)).build();
+    }
+  }
+
+  private Notification.Action action(String n, State s, int code) {
+    int res; String label; String intentAction;
+    switch (n) {
+      case "prev": res = ic("ic_pb_prev", android.R.drawable.ic_media_previous); label = s.lPrev; intentAction = "prev"; break;
+      case "next": res = ic("ic_pb_next", android.R.drawable.ic_media_next); label = s.lNext; intentAction = "next"; break;
+      case "rewind": res = ic("ic_pb_rewind", android.R.drawable.ic_media_rew); label = s.lRew; intentAction = "rewind"; break;
+      case "forward": res = ic("ic_pb_forward", android.R.drawable.ic_media_ff); label = s.lFwd; intentAction = "forward"; break;
+      case "close": res = ic("ic_pb_close", android.R.drawable.ic_menu_close_clear_cancel); label = s.lClose; intentAction = "close"; break;
+      default:
+        res = s.playing ? ic("ic_pb_pause", android.R.drawable.ic_media_pause) : ic("ic_pb_play", android.R.drawable.ic_media_play);
+        label = s.playing ? s.lPause : s.lPlay; intentAction = s.playing ? "pause" : "play";
+    }
+    return new Notification.Action.Builder(Icon.createWithResource(this, res), label, pi(intentAction, 10 + code)).build();
   }
 
   /** App drawable by name (own vector icons are generated into res/drawable by the build); framework icon as fallback. */

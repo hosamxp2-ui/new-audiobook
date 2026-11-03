@@ -38,7 +38,7 @@ public class MediaNotificationPlugin extends Plugin {
     s.position = (long) (double) call.getDouble("position", 0.0);
     s.rate = (float) (double) call.getDouble("rate", 1.0);
     s.playing = call.getBoolean("playing", false);
-    s.tracks = call.getBoolean("tracks", false);
+    s.mode = call.getString("mode", "seek");
     s.lRew = call.getString("lRew", s.lRew);
     s.lPlay = call.getString("lPlay", s.lPlay);
     s.lPause = call.getString("lPause", s.lPause);
