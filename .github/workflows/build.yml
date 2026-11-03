@@ -62,6 +62,8 @@ jobs:
           vec ic_pb_forward "M23 4v6h-6M20.5 15a9 9 0 1 1-2.1-9.4L23 10" "$S"
           vec ic_pb_play    "M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z" "$F"
           vec ic_pb_pause   "M7 4h3.5v16H7zM13.5 4H17v16h-3.5z" "$F"
+          vec ic_pb_prev    "M6 5h2v14H6zM20 5v14L9 12z" "$F"
+          vec ic_pb_next    "M16 5h2v14h-2zM4 5v14l11-7z" "$F"
           vec ic_pb_close   "M18 6L6 18M6 6l12 12" "$S"
           vec ic_pb_stat    "M3 18v-6a9 9 0 0 1 18 0v6M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" "$S"
           ls "$D"
