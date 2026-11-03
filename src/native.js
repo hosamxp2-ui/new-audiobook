@@ -25,7 +25,7 @@ if (Capacitor.isNativePlatform()) {
         position: Math.round((pos.position || 0) * 1000),
         rate: pos.playbackRate || 1,
         playing: state === 'playing',
-        tracks: !!(handlers.previoustrack || handlers.nexttrack)   // show prev/next buttons only in that mode
+        mode: window.__notifMode || ((handlers.previoustrack || handlers.nexttrack) ? 'tracks' : 'seek')
       };
       if (art && art !== artSent) { o.artwork = art; artSent = art; }   // send the cover only when it changes
       MediaNotification.update(o).catch(() => {});
@@ -73,7 +73,7 @@ if (Capacitor.isNativePlatform()) {
     openSettings: () => MediaNotification.openSettings(),
     test: async () => {
       await MediaNotification.update({ title: 'Notification test', artist: 'Audiobook Player',
-        duration: 60000, position: 15000, rate: 1, playing: true, tracks: false });
+        duration: 60000, position: 15000, rate: 1, playing: true, mode: window.__notifMode || 'tracks' });
       await new Promise((r) => setTimeout(r, 1200));
       return MediaNotification.status();
     }
