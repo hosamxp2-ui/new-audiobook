@@ -203,6 +203,22 @@ button:disabled{opacity:.4;pointer-events:none}
 #mSeek::-webkit-slider-runnable-track{height:4px}
 #mSeek::-webkit-slider-thumb{width:14px;height:14px;margin-top:-5px}
 #mSeek::-moz-range-thumb{width:14px;height:14px}
+.mrow{display:flex;gap:8px;margin:0 0 14px}
+.mrow button{flex:1;flex-direction:row;gap:8px;min-height:46px;background:var(--s);box-shadow:inset 0 0 0 1px var(--ln);font-size:13px}
+.mrow button.on{background:var(--grad);color:var(--ink);box-shadow:none}
+.mrow span{position:relative;display:flex}.mrow span i{position:absolute;right:-5px;top:-5px;font:700 10px var(--f);font-style:normal;background:var(--ink);color:#fff;border-radius:7px;min-width:14px;text-align:center;padding:0 3px}
+#bBack.hold,#bFwd.hold{background:var(--grad);color:var(--ink)}
+#plock{position:absolute;top:0;left:0;right:0;bottom:0;z-index:6;touch-action:none;user-select:none;-webkit-user-select:none;display:flex;align-items:flex-end;justify-content:center;padding-bottom:calc(26px + env(safe-area-inset-bottom))}
+.lk{display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:26px;padding:12px 20px;position:relative;overflow:hidden;box-shadow:0 8px 30px var(--sh);pointer-events:none;font:600 14px var(--f)}
+.lk .ring{position:absolute;left:0;bottom:0;height:4px;width:0;background:var(--grad)}
+#player.locked .pb{opacity:.92}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sc{background:var(--s);border-radius:20px;padding:14px;box-shadow:inset 0 0 0 1px var(--ln)}
+.sc b{display:block;font:700 22px var(--f)}.sc small{color:var(--m);font:12px var(--f)}
+.chart{display:flex;align-items:flex-end;gap:8px;height:130px;margin:14px 0;direction:ltr}
+.chart div{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.chart i{display:block;width:100%;border-radius:8px 8px 4px 4px;background:var(--grad);min-height:3px}
+.chart small{color:var(--m);font-size:11px}
 </style></head>
 <body>
 <header id="bar">
@@ -241,6 +257,7 @@ button:disabled{opacity:.4;pointer-events:none}
   <input type="range" id="seek" min="0" max="0" step="1" value="0">
   <div class="tm"><span id="tCur">0:00</span><span id="tRem"></span><span id="tTot">0:00</span></div>
   <div class="tr"><button id="bPrev"></button><button id="bBack"></button><button id="bPlay"></button><button id="bFwd"></button><button id="bNext"></button></div>
+  <div class="mrow"><button id="bRepeat"><span></span><small></small></button><button id="bQueue"><span></span><small></small></button><button id="bLock"><span></span><small></small></button></div>
   <div class="tools">
    <button id="bSpeed"><span></span><b data-i="speed"></b><small></small></button>
    <button id="bSleep"><span></span><b data-i="sleep"></b><small></small></button>
@@ -248,6 +265,7 @@ button:disabled{opacity:.4;pointer-events:none}
    <button id="bChap"><span></span><b data-i="chap"></b><small></small></button>
   </div>
  </div>
+ <div id="plock" hidden><div class="lk"><span></span><b data-i="holdUnlock"></b><i class="ring"></i></div></div>
 </div>
 <div id="sheet" hidden><div id="bd"></div><div id="pn"><div class="sh"><h2 id="shT"></h2><button class="ib" id="shX"></button></div><div id="shB"></div></div></div>
 <input type="file" id="fDir" webkitdirectory multiple hidden>
@@ -259,7 +277,7 @@ button:disabled{opacity:.4;pointer-events:none}
 
 <script>
 'use strict';
-const $=s=>document.querySelector(s),au=$('#au'),VER='10.0';
+const $=s=>document.querySelector(s),au=$('#au'),VER='11.0';
 
 const LS=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},SV=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch{if(!SV.w){SV.w=1;setTimeout(()=>{toast(t('quota'));SV.w=0},0)}return false}};
 function loadLib(){
@@ -277,19 +295,20 @@ function saveLib(now){
 function flush(){if(noFlush)return;clearTimeout(pT);pT=0;SV('ab_prog',prog);if(lDirty){clearTimeout(lT);saveLib.w()}}
 
 /* ---------- settings & translations ---------- */
-const cfg=Object.assign({lang:(navigator.language||'en').startsWith('ar')?'ar':'en',theme:'auto',back:10,fwd:30,fade:true,bg:true,view:'list',libFilter:'all',covers:true,notif:'tracks',notifV:2,smartRw:true,rates:{},sorts:{},rate:LS('ab_rate',1)},LS('ab_cfg',{}));
+const cfg=Object.assign({lang:(navigator.language||'en').startsWith('ar')?'ar':'en',theme:'auto',back:10,fwd:30,fade:true,bg:true,view:'list',libFilter:'all',covers:true,notif:'tracks',notifV:2,smartRw:true,rates:{},repeat:'off',bgPlay:true,sorts:{},rate:LS('ab_rate',1)},LS('ab_cfg',{}));
 if(!cfg.sorts||typeof cfg.sorts!=='object')cfg.sorts={};
 if(!(cfg.rate>=.5&&cfg.rate<=3))cfg.rate=1;
 if(cfg.lang!=='ar'&&cfg.lang!=='en')cfg.lang='en';
 if(cfg.view!=='grid')cfg.view='list';
 if(['seek','tracks','tracksClose'].indexOf(cfg.notif)<0)cfg.notif='tracks';
 if(!cfg.rates||typeof cfg.rates!=='object')cfg.rates={};
+if(['off','episode','book','all'].indexOf(cfg.repeat)<0)cfg.repeat='off';
 if(cfg.notifV!==2){cfg.notif='tracks';cfg.notifV=2}
 if(['all','new','prog','done'].indexOf(cfg.libFilter)<0)cfg.libFilter='all';
 const saveCfg=()=>SV('ab_cfg',cfg);
 
-const I={en:{appName:'Audiobook Player',lib:'Library',play:'Player',marks:'Bookmarks',set:'Settings',addFolder:'+ Folder',addFiles:'Files',home:'Home',none:'No audiobooks yet.\nAdd a folder from internal storage or an SD card.',emptyDir:'Empty folder.',folderAll:'Folder overall: {0}% · {1}/{2} done',left:'{0} left',needsRe:'Needs reconnect · progress is kept',reconnect:'Reconnect',notPlayed:'Not played',finished:'Finished · {0}',nothing:'Nothing playing',pickFile:'Pick a file from your library',speed:'Speed',sleep:'Sleep timer',bm:'Bookmarks',chap:'Chapters',off:'Off',endTrack:'End of track',min:'{0} min',sec:'{0}s',fade:'Fade volume out before stopping',notePh:'Note (optional)',add:'Add',markAdded:'Bookmarked at {0}',noMarks:'No bookmarks yet.\nOpen the player and tap Bookmarks.',noMarksHere:'No bookmarks for this file.',noChap:'No chapters in this file.',loose:'Loose files',confirmRm:'Remove "{0}" from the library? Your files are not touched.',notLinked:'File not linked. Reconnect its folder.',cantPlay:'Cannot play this file',cantRead:'Cannot read that folder',noAudio:'No audio files found',sleepSet:'Sleep timer set',lang:'Language',theme:'Theme',tAuto:'Auto',tLight:'Light',tDark:'Dark',skipB:'Skip back',skipF:'Skip forward',storage:'Storage & folders',usage:'Browser storage used: {0}',rescan:'Re-scan folders',clearP:'Clear all progress',confirmClr:'Erase saved progress for every file?',info:'App info',ver:'Version {0}',install:'Install app',getSw:'Download sw.js',swNote:'For installable offline use, host index.html over HTTPS with sw.js next to it.',pickerYes:'This browser can remember folders between sessions.',pickerNo:'This browser cannot remember folders. Re-select them after a restart; progress is kept.',scanned:'Library updated',cleared:'Progress cleared',back:'Back',all:'All',fProg:'In progress',fDone:'Completed',fNew:'New',books:'Books',filesT:'Files',noneFilter:'Nothing here yet.',s_name:'Name',s_size:'Size',s_date:'Last modified',s_prog:'Progress',s_stat:'Status',d_name0:'A → Z',d_name1:'Z → A',d_size0:'Smallest first',d_size1:'Largest first',d_date0:'Oldest first',d_date1:'Newest first',d_prog0:'Lowest first',d_prog1:'Highest first',d_stat0:'Unplayed first',d_stat1:'Completed first',scanning:'Scanning… {0} files found',indexing:'Indexing… {0} / {1}',stop:'Stop',tooMany:'Large folder: the first {0} audio files were added. For best performance, add big libraries one subfolder at a time.',blocked:'The browser blocked access to this folder. Please choose a subfolder (for example a single book) instead.',skipped:'{0} folders could not be read and were skipped.',oops:'Something went wrong. Your library and progress are safe.',quota:'Browser storage is almost full. Remove folders or clear progress.',bg:'Analyze durations in the background',stopped:'Scan stopped. Your existing library was kept.',pls:'Playlists',search:'Search books and files…',fRecent:'Recently played',nowPlaying:'Now playing',reconBanner:'Folders need permission. Tap to reconnect ({0})',secAppearance:'Appearance',secPlayback:'Playback',secStorage:'Storage & folders',secBackup:'Backup & restore',secAbout:'About',export:'Export backup (JSON)',import:'Restore from backup',confirmImport:'Restore this backup? Current progress, bookmarks and settings will be replaced.',importOk:'Backup restored',importBad:'This is not a valid backup file.',exported:'Backup saved',noResults:'No matches.',s_last:'Last played',d_last0:'Oldest first',d_last1:'Newest first',today:'Today',yesterday:'Yesterday',earlier:'Earlier',clrHist:'Clear history',confirmHist:'Clear the recently-played history? Your progress is kept.',noRecent:'Nothing played yet.',tHome:'Home',badgeNew:'NEW',notifTest:'Test notification',notifSettings:'Notification settings',notifOn:'notifications ON',notifOff:'notifications OFF',svcOn:'service running',svcOff:'service stopped',notifAsk:'Notifications are turned off for this app. Open settings?',notifBtns:'Notification buttons',notifSeek:'Skip + close',notifTracks:'Episodes + skip',notifTC:'Episodes + close',smartRw:'Smart rewind when resuming',coversLbl:'Extract cover art from files',viewList:'List view',viewGrid:'Grid view',folderFiles:'Folder files',prevFile:'Previous',nextFile:'Next',stopClose:'Stop and close',root:'All folders',gMorning:'Good morning',gAfternoon:'Good afternoon',gEvening:'Good evening',contHero:'Continue listening',startHero:'Start listening',seeAll:'See all',nFiles:'{0} files',homeEmptyT:'Your library is empty',homeEmptyS:'Add a folder with audiobooks to get started.',backupNote:'Backups contain progress, bookmarks, settings and the library index (not your audio files). After restoring on a new device, reconnect your folders.'},
-ar:{appName:'مشغّل الكتب الصوتية',lib:'المكتبة',play:'المشغّل',marks:'العلامات',set:'الإعدادات',addFolder:'+ مجلد',addFiles:'ملفات',home:'الرئيسية',none:'لا توجد كتب صوتية بعد.\nأضف مجلدًا من التخزين الداخلي أو بطاقة الذاكرة.',emptyDir:'المجلد فارغ.',folderAll:'إجمالي المجلد: {0}% · أُنجز {1} من {2}',left:'متبقي {0}',needsRe:'يحتاج إعادة ربط · التقدم محفوظ',reconnect:'إعادة الربط',notPlayed:'لم يُشغَّل',finished:'انتهى · {0}',nothing:'لا شيء قيد التشغيل',pickFile:'اختر ملفًا من مكتبتك',speed:'السرعة',sleep:'مؤقت النوم',bm:'العلامات',chap:'الفصول',off:'إيقاف',endTrack:'نهاية المقطع',min:'{0} دقيقة',sec:'{0} ث',fade:'خفض الصوت تدريجيًا قبل الإيقاف',notePh:'ملاحظة (اختياري)',add:'إضافة',markAdded:'تمت إضافة علامة عند {0}',noMarks:'لا توجد علامات بعد.\nافتح المشغّل واضغط على العلامات.',noMarksHere:'لا توجد علامات لهذا الملف.',noChap:'لا توجد فصول في هذا الملف.',loose:'ملفات منفردة',confirmRm:'إزالة «{0}» من المكتبة؟ ملفاتك لن تُحذف.',notLinked:'الملف غير مرتبط. أعد ربط مجلده.',cantPlay:'تعذّر تشغيل هذا الملف',cantRead:'تعذّرت قراءة هذا المجلد',noAudio:'لم يتم العثور على ملفات صوتية',sleepSet:'تم ضبط مؤقت النوم',lang:'اللغة',theme:'المظهر',tAuto:'تلقائي',tLight:'فاتح',tDark:'داكن',skipB:'التراجع',skipF:'التقديم',storage:'التخزين والمجلدات',usage:'المساحة المستخدمة في المتصفح: {0}',rescan:'إعادة فحص المجلدات',clearP:'مسح كل التقدم',confirmClr:'حذف التقدم المحفوظ لكل الملفات؟',info:'معلومات التطبيق',ver:'الإصدار {0}',install:'تثبيت التطبيق',getSw:'تنزيل sw.js',swNote:'للتثبيت والعمل دون اتصال، ضع index.html على استضافة HTTPS ومعه sw.js في المجلد نفسه.',pickerYes:'يمكن لهذا المتصفح تذكّر المجلدات بين الجلسات.',pickerNo:'لا يستطيع هذا المتصفح تذكّر المجلدات. أعد اختيارها بعد إعادة التشغيل؛ التقدم محفوظ.',scanned:'تم تحديث المكتبة',cleared:'تم مسح التقدم',back:'رجوع',all:'الكل',fProg:'قيد الاستماع',fDone:'المكتملة',fNew:'الجديدة',books:'الكتب',filesT:'الملفات',noneFilter:'لا يوجد شيء هنا بعد.',s_name:'الاسم',s_size:'الحجم',s_date:'آخر تعديل',s_prog:'التقدم',s_stat:'الحالة',d_name0:'أ ← ي',d_name1:'ي ← أ',d_size0:'الأصغر أولًا',d_size1:'الأكبر أولًا',d_date0:'الأقدم أولًا',d_date1:'الأحدث أولًا',d_prog0:'الأقل تقدمًا أولًا',d_prog1:'الأعلى تقدمًا أولًا',d_stat0:'الجديدة أولًا',d_stat1:'المكتملة أولًا',scanning:'جارٍ الفحص… تم العثور على {0} ملف',indexing:'جارٍ الفهرسة… {0} / {1}',stop:'إيقاف',tooMany:'مجلد كبير: أُضيفت أول {0} ملفًا صوتيًا. للحصول على أفضل أداء أضف المكتبات الكبيرة مجلدًا فرعيًا في كل مرة.',blocked:'منع المتصفح الوصول إلى هذا المجلد. اختر مجلدًا فرعيًا (مثل كتاب واحد) بدلًا منه.',skipped:'تعذّرت قراءة {0} مجلد وتم تخطيها.',oops:'حدث خطأ ما. مكتبتك وتقدمك بأمان.',quota:'مساحة تخزين المتصفح شبه ممتلئة. احذف مجلدات أو امسح التقدم.',bg:'تحليل المدد في الخلفية',stopped:'تم إيقاف الفحص. بقيت مكتبتك الحالية كما هي.',pls:'قوائم التشغيل',search:'ابحث في الكتب والملفات…',fRecent:'المشغّلة مؤخرًا',nowPlaying:'قيد التشغيل',reconBanner:'المجلدات تحتاج إلى إذن. اضغط لإعادة الربط ({0})',secAppearance:'المظهر',secPlayback:'التشغيل',secStorage:'التخزين والمجلدات',secBackup:'النسخ الاحتياطي والاستعادة',secAbout:'حول التطبيق',export:'تصدير نسخة احتياطية (JSON)',import:'استعادة من نسخة احتياطية',confirmImport:'استعادة هذه النسخة؟ سيتم استبدال التقدم والعلامات والإعدادات الحالية.',importOk:'تمت استعادة النسخة',importBad:'هذا ليس ملف نسخة احتياطية صالحًا.',exported:'تم حفظ النسخة الاحتياطية',noResults:'لا توجد نتائج.',s_last:'آخر تشغيل',d_last0:'الأقدم أولًا',d_last1:'الأحدث أولًا',today:'اليوم',yesterday:'أمس',earlier:'سابقًا',clrHist:'مسح السجل',confirmHist:'مسح سجل المشغَّل مؤخرًا؟ سيبقى تقدمك محفوظًا.',noRecent:'لم يتم تشغيل شيء بعد.',tHome:'الرئيسية',badgeNew:'جديد',notifTest:'اختبار الإشعار',notifSettings:'إعدادات الإشعارات',notifOn:'الإشعارات مفعّلة',notifOff:'الإشعارات متوقفة',svcOn:'الخدمة تعمل',svcOff:'الخدمة متوقفة',notifAsk:'الإشعارات متوقفة لهذا التطبيق. فتح الإعدادات؟',notifBtns:'أزرار الإشعار',notifSeek:'تقديم/تأخير + إغلاق',notifTracks:'الحلقات + تقديم/تأخير',notifTC:'الحلقات + إغلاق',smartRw:'رجوع ذكي عند الاستئناف',coversLbl:'استخراج صور الأغلفة من الملفات',viewList:'عرض قائمة',viewGrid:'عرض شبكي',folderFiles:'ملفات المجلد',prevFile:'السابق',nextFile:'التالي',stopClose:'إيقاف وإغلاق',root:'كل المجلدات',gMorning:'صباح الخير',gAfternoon:'نهارك سعيد',gEvening:'مساء الخير',contHero:'تابع الاستماع',startHero:'ابدأ الاستماع',seeAll:'عرض الكل',nFiles:'{0} ملف',homeEmptyT:'مكتبتك فارغة',homeEmptyS:'أضف مجلدًا يحتوي على كتب صوتية للبدء.',backupNote:'تحتوي النسخة على التقدم والعلامات والإعدادات وفهرس المكتبة (دون ملفاتك الصوتية). بعد الاستعادة على جهاز جديد أعد ربط المجلدات.'}};
+const I={en:{appName:'Audiobook Player',lib:'Library',play:'Player',marks:'Bookmarks',set:'Settings',addFolder:'+ Folder',addFiles:'Files',home:'Home',none:'No audiobooks yet.\nAdd a folder from internal storage or an SD card.',emptyDir:'Empty folder.',folderAll:'Folder overall: {0}% · {1}/{2} done',left:'{0} left',needsRe:'Needs reconnect · progress is kept',reconnect:'Reconnect',notPlayed:'Not played',finished:'Finished · {0}',nothing:'Nothing playing',pickFile:'Pick a file from your library',speed:'Speed',sleep:'Sleep timer',bm:'Bookmarks',chap:'Chapters',off:'Off',endTrack:'End of track',min:'{0} min',sec:'{0}s',fade:'Fade volume out before stopping',notePh:'Note (optional)',add:'Add',markAdded:'Bookmarked at {0}',noMarks:'No bookmarks yet.\nOpen the player and tap Bookmarks.',noMarksHere:'No bookmarks for this file.',noChap:'No chapters in this file.',loose:'Loose files',confirmRm:'Remove "{0}" from the library? Your files are not touched.',notLinked:'File not linked. Reconnect its folder.',cantPlay:'Cannot play this file',cantRead:'Cannot read that folder',noAudio:'No audio files found',sleepSet:'Sleep timer set',lang:'Language',theme:'Theme',tAuto:'Auto',tLight:'Light',tDark:'Dark',skipB:'Skip back',skipF:'Skip forward',storage:'Storage & folders',usage:'Browser storage used: {0}',rescan:'Re-scan folders',clearP:'Clear all progress',confirmClr:'Erase saved progress for every file?',info:'App info',ver:'Version {0}',install:'Install app',getSw:'Download sw.js',swNote:'For installable offline use, host index.html over HTTPS with sw.js next to it.',pickerYes:'This browser can remember folders between sessions.',pickerNo:'This browser cannot remember folders. Re-select them after a restart; progress is kept.',scanned:'Library updated',cleared:'Progress cleared',back:'Back',all:'All',fProg:'In progress',fDone:'Completed',fNew:'New',books:'Books',filesT:'Files',noneFilter:'Nothing here yet.',s_name:'Name',s_size:'Size',s_date:'Last modified',s_prog:'Progress',s_stat:'Status',d_name0:'A → Z',d_name1:'Z → A',d_size0:'Smallest first',d_size1:'Largest first',d_date0:'Oldest first',d_date1:'Newest first',d_prog0:'Lowest first',d_prog1:'Highest first',d_stat0:'Unplayed first',d_stat1:'Completed first',scanning:'Scanning… {0} files found',indexing:'Indexing… {0} / {1}',stop:'Stop',tooMany:'Large folder: the first {0} audio files were added. For best performance, add big libraries one subfolder at a time.',blocked:'The browser blocked access to this folder. Please choose a subfolder (for example a single book) instead.',skipped:'{0} folders could not be read and were skipped.',oops:'Something went wrong. Your library and progress are safe.',quota:'Browser storage is almost full. Remove folders or clear progress.',bg:'Analyze durations in the background',stopped:'Scan stopped. Your existing library was kept.',pls:'Playlists',search:'Search books and files…',fRecent:'Recently played',nowPlaying:'Now playing',reconBanner:'Folders need permission. Tap to reconnect ({0})',secAppearance:'Appearance',secPlayback:'Playback',secStorage:'Storage & folders',secBackup:'Backup & restore',secAbout:'About',export:'Export backup (JSON)',import:'Restore from backup',confirmImport:'Restore this backup? Current progress, bookmarks and settings will be replaced.',importOk:'Backup restored',importBad:'This is not a valid backup file.',exported:'Backup saved',noResults:'No matches.',s_last:'Last played',d_last0:'Oldest first',d_last1:'Newest first',today:'Today',yesterday:'Yesterday',earlier:'Earlier',clrHist:'Clear history',confirmHist:'Clear the recently-played history? Your progress is kept.',noRecent:'Nothing played yet.',tHome:'Home',badgeNew:'NEW',notifTest:'Test notification',notifSettings:'Notification settings',notifOn:'notifications ON',notifOff:'notifications OFF',svcOn:'service running',svcOff:'service stopped',notifAsk:'Notifications are turned off for this app. Open settings?',notifBtns:'Notification buttons',notifSeek:'Skip + close',notifTracks:'Episodes + skip',notifTC:'Episodes + close',repeatOff:'Repeat off',repeatEp:'Repeat episode',repeatBook:'Repeat book',repeatAll:'Repeat all',upNext:'Up next',playNow:'Play now',playNext:'Play next',addQueue:'Add to queue',removeQueue:'Remove from queue',clearQueue:'Clear queue',queueEmpty:'The queue is empty.\nLong-press a book or episode to add it.',queued:'Added to queue',queuedNext:'Will play next',lock:'Lock',locked:'Player locked',holdUnlock:'Hold to unlock',lockedHint:'Player is locked. Hold the screen to unlock.',history:'History',stats:'Stats',histEmpty:'No listening history yet.',clrHistAll:'Clear history',confirmHistAll:'Erase the whole listening history and statistics?',statTotal:'Total listening',statToday:'Today',stat7:'Last 7 days',statStreak:'Day streak',statBooks:'Books completed',statFiles:'Episodes completed',statAvg:'Daily average',statSaved:'Time saved by speed',statTop:'Most listened',statDays:'days',unitH:'h',unitM:'m',unitS:'s',bgPlay:'Keep playing in the background',smartRw:'Smart rewind when resuming',coversLbl:'Extract cover art from files',viewList:'List view',viewGrid:'Grid view',folderFiles:'Folder files',prevFile:'Previous',nextFile:'Next',stopClose:'Stop and close',root:'All folders',gMorning:'Good morning',gAfternoon:'Good afternoon',gEvening:'Good evening',contHero:'Continue listening',startHero:'Start listening',seeAll:'See all',nFiles:'{0} files',homeEmptyT:'Your library is empty',homeEmptyS:'Add a folder with audiobooks to get started.',backupNote:'Backups contain progress, bookmarks, settings and the library index (not your audio files). After restoring on a new device, reconnect your folders.'},
+ar:{appName:'مشغّل الكتب الصوتية',lib:'المكتبة',play:'المشغّل',marks:'العلامات',set:'الإعدادات',addFolder:'+ مجلد',addFiles:'ملفات',home:'الرئيسية',none:'لا توجد كتب صوتية بعد.\nأضف مجلدًا من التخزين الداخلي أو بطاقة الذاكرة.',emptyDir:'المجلد فارغ.',folderAll:'إجمالي المجلد: {0}% · أُنجز {1} من {2}',left:'متبقي {0}',needsRe:'يحتاج إعادة ربط · التقدم محفوظ',reconnect:'إعادة الربط',notPlayed:'لم يُشغَّل',finished:'انتهى · {0}',nothing:'لا شيء قيد التشغيل',pickFile:'اختر ملفًا من مكتبتك',speed:'السرعة',sleep:'مؤقت النوم',bm:'العلامات',chap:'الفصول',off:'إيقاف',endTrack:'نهاية المقطع',min:'{0} دقيقة',sec:'{0} ث',fade:'خفض الصوت تدريجيًا قبل الإيقاف',notePh:'ملاحظة (اختياري)',add:'إضافة',markAdded:'تمت إضافة علامة عند {0}',noMarks:'لا توجد علامات بعد.\nافتح المشغّل واضغط على العلامات.',noMarksHere:'لا توجد علامات لهذا الملف.',noChap:'لا توجد فصول في هذا الملف.',loose:'ملفات منفردة',confirmRm:'إزالة «{0}» من المكتبة؟ ملفاتك لن تُحذف.',notLinked:'الملف غير مرتبط. أعد ربط مجلده.',cantPlay:'تعذّر تشغيل هذا الملف',cantRead:'تعذّرت قراءة هذا المجلد',noAudio:'لم يتم العثور على ملفات صوتية',sleepSet:'تم ضبط مؤقت النوم',lang:'اللغة',theme:'المظهر',tAuto:'تلقائي',tLight:'فاتح',tDark:'داكن',skipB:'التراجع',skipF:'التقديم',storage:'التخزين والمجلدات',usage:'المساحة المستخدمة في المتصفح: {0}',rescan:'إعادة فحص المجلدات',clearP:'مسح كل التقدم',confirmClr:'حذف التقدم المحفوظ لكل الملفات؟',info:'معلومات التطبيق',ver:'الإصدار {0}',install:'تثبيت التطبيق',getSw:'تنزيل sw.js',swNote:'للتثبيت والعمل دون اتصال، ضع index.html على استضافة HTTPS ومعه sw.js في المجلد نفسه.',pickerYes:'يمكن لهذا المتصفح تذكّر المجلدات بين الجلسات.',pickerNo:'لا يستطيع هذا المتصفح تذكّر المجلدات. أعد اختيارها بعد إعادة التشغيل؛ التقدم محفوظ.',scanned:'تم تحديث المكتبة',cleared:'تم مسح التقدم',back:'رجوع',all:'الكل',fProg:'قيد الاستماع',fDone:'المكتملة',fNew:'الجديدة',books:'الكتب',filesT:'الملفات',noneFilter:'لا يوجد شيء هنا بعد.',s_name:'الاسم',s_size:'الحجم',s_date:'آخر تعديل',s_prog:'التقدم',s_stat:'الحالة',d_name0:'أ ← ي',d_name1:'ي ← أ',d_size0:'الأصغر أولًا',d_size1:'الأكبر أولًا',d_date0:'الأقدم أولًا',d_date1:'الأحدث أولًا',d_prog0:'الأقل تقدمًا أولًا',d_prog1:'الأعلى تقدمًا أولًا',d_stat0:'الجديدة أولًا',d_stat1:'المكتملة أولًا',scanning:'جارٍ الفحص… تم العثور على {0} ملف',indexing:'جارٍ الفهرسة… {0} / {1}',stop:'إيقاف',tooMany:'مجلد كبير: أُضيفت أول {0} ملفًا صوتيًا. للحصول على أفضل أداء أضف المكتبات الكبيرة مجلدًا فرعيًا في كل مرة.',blocked:'منع المتصفح الوصول إلى هذا المجلد. اختر مجلدًا فرعيًا (مثل كتاب واحد) بدلًا منه.',skipped:'تعذّرت قراءة {0} مجلد وتم تخطيها.',oops:'حدث خطأ ما. مكتبتك وتقدمك بأمان.',quota:'مساحة تخزين المتصفح شبه ممتلئة. احذف مجلدات أو امسح التقدم.',bg:'تحليل المدد في الخلفية',stopped:'تم إيقاف الفحص. بقيت مكتبتك الحالية كما هي.',pls:'قوائم التشغيل',search:'ابحث في الكتب والملفات…',fRecent:'المشغّلة مؤخرًا',nowPlaying:'قيد التشغيل',reconBanner:'المجلدات تحتاج إلى إذن. اضغط لإعادة الربط ({0})',secAppearance:'المظهر',secPlayback:'التشغيل',secStorage:'التخزين والمجلدات',secBackup:'النسخ الاحتياطي والاستعادة',secAbout:'حول التطبيق',export:'تصدير نسخة احتياطية (JSON)',import:'استعادة من نسخة احتياطية',confirmImport:'استعادة هذه النسخة؟ سيتم استبدال التقدم والعلامات والإعدادات الحالية.',importOk:'تمت استعادة النسخة',importBad:'هذا ليس ملف نسخة احتياطية صالحًا.',exported:'تم حفظ النسخة الاحتياطية',noResults:'لا توجد نتائج.',s_last:'آخر تشغيل',d_last0:'الأقدم أولًا',d_last1:'الأحدث أولًا',today:'اليوم',yesterday:'أمس',earlier:'سابقًا',clrHist:'مسح السجل',confirmHist:'مسح سجل المشغَّل مؤخرًا؟ سيبقى تقدمك محفوظًا.',noRecent:'لم يتم تشغيل شيء بعد.',tHome:'الرئيسية',badgeNew:'جديد',notifTest:'اختبار الإشعار',notifSettings:'إعدادات الإشعارات',notifOn:'الإشعارات مفعّلة',notifOff:'الإشعارات متوقفة',svcOn:'الخدمة تعمل',svcOff:'الخدمة متوقفة',notifAsk:'الإشعارات متوقفة لهذا التطبيق. فتح الإعدادات؟',notifBtns:'أزرار الإشعار',notifSeek:'تقديم/تأخير + إغلاق',notifTracks:'الحلقات + تقديم/تأخير',notifTC:'الحلقات + إغلاق',repeatOff:'التكرار متوقف',repeatEp:'تكرار الحلقة',repeatBook:'تكرار الكتاب',repeatAll:'تكرار الكل',upNext:'طابور الكتب',playNow:'تشغيل الآن',playNext:'تشغيل التالي',addQueue:'إضافة إلى الطابور',removeQueue:'إزالة من الطابور',clearQueue:'مسح الطابور',queueEmpty:'الطابور فارغ.\nاضغط مطولًا على كتاب أو حلقة لإضافتها.',queued:'أُضيف إلى الطابور',queuedNext:'سيُشغَّل بعد الحالي',lock:'قفل',locked:'تم قفل المشغّل',holdUnlock:'اضغط مطولًا لفتح القفل',lockedHint:'المشغّل مقفل. اضغط مطولًا على الشاشة لفتحه.',history:'السجل',stats:'الإحصائيات',histEmpty:'لا يوجد سجل استماع بعد.',clrHistAll:'مسح السجل',confirmHistAll:'حذف سجل الاستماع والإحصائيات بالكامل؟',statTotal:'إجمالي الاستماع',statToday:'اليوم',stat7:'آخر 7 أيام',statStreak:'أيام متتالية',statBooks:'كتب مكتملة',statFiles:'حلقات مكتملة',statAvg:'المتوسط اليومي',statSaved:'الوقت الموفَّر بالسرعة',statTop:'الأكثر استماعًا',statDays:'يوم',unitH:'س',unitM:'د',unitS:'ث',bgPlay:'متابعة التشغيل في الخلفية',smartRw:'رجوع ذكي عند الاستئناف',coversLbl:'استخراج صور الأغلفة من الملفات',viewList:'عرض قائمة',viewGrid:'عرض شبكي',folderFiles:'ملفات المجلد',prevFile:'السابق',nextFile:'التالي',stopClose:'إيقاف وإغلاق',root:'كل المجلدات',gMorning:'صباح الخير',gAfternoon:'نهارك سعيد',gEvening:'مساء الخير',contHero:'تابع الاستماع',startHero:'ابدأ الاستماع',seeAll:'عرض الكل',nFiles:'{0} ملف',homeEmptyT:'مكتبتك فارغة',homeEmptyS:'أضف مجلدًا يحتوي على كتب صوتية للبدء.',backupNote:'تحتوي النسخة على التقدم والعلامات والإعدادات وفهرس المكتبة (دون ملفاتك الصوتية). بعد الاستعادة على جهاز جديد أعد ربط المجلدات.'}};
 const t=(k,...a)=>String(I[cfg.lang][k]??I.en[k]??k).replace(/\{(\d)\}/g,(_,i)=>a[i]);
 
 /* ---------- state ---------- */
@@ -297,6 +316,10 @@ let lib=loadLib(),prog=LS('ab_prog',{}),marks=LS('ab_bm',[]),last=LS('ab_last',n
 if(!lib||!Array.isArray(lib.roots)||!lib.files||typeof lib.files!=='object')lib={roots:[],files:{}};
 if(!prog||typeof prog!=='object'||Array.isArray(prog))prog={};
 if(!Array.isArray(marks))marks=[];
+let queueUp=LS('ab_queue',[]),hist=LS('ab_hist',[]),stats=LS('ab_stats',{days:{},tw:0,tc:0});
+if(!Array.isArray(queueUp))queueUp=[];
+if(!Array.isArray(hist))hist=[];
+if(!stats||typeof stats!=='object'||!stats.days)stats={days:{},tw:0,tc:0};
 const fobjs={},rootH={},live=new Set(),covers={},col=new Intl.Collator(undefined,{numeric:true}).compare;
 let cur=[],queue=[],qi=-1,key=null,chapters=[],sleep=null,sleepT=0,objUrl=null,pending=null,drag=false,tab='home',pl='prog',q='',qT=0,cover='',lastCi=-2,dq=false,sheetName=null,dip=null,libVer=0,idxVer=-1,IX=null,dirty=false,lock=false,scanSt=null,manU='',io=null,prio=[],rf=0,pgS={sig:'',n:40},playerOpen=false,booted=false,noFlush=false,mp4img=null,openSec='appearance',rcP=null,autoDone=false,lastCol=null,thumbs={},prevTab='home';
 
@@ -328,7 +351,7 @@ function applyLang(){
  document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));
  $('#q').placeholder=t('search');$('#addDir').title=t('addFolder');$('#addFiles').title=t('addFiles');$('#bFiles').title=t('folderFiles');$('#pStop').title=t('stopClose');$('#mClose').title=t('stopClose');
  if(!key){$('#ttl').textContent=t('nothing');$('#sub').textContent=t('pickFile')}
- setBar();buildSkips();buildManifest();render();renderSettings();updateTools();tick();
+ setBar();buildSkips();buildManifest();render();renderSettings();updateTools();tick();updateModes();
 }
 function buildSkips(){$('#bBack').innerHTML=ico('rew')+'<small>'+cfg.back+'</small>';$('#bFwd').innerHTML=ico('fwd')+'<small>'+cfg.fwd+'</small>'}
 
@@ -544,7 +567,7 @@ async function durQueue(){
 const isDone=(a,b)=>b>0&&(b-a<2||a/b>=.995);
 function stat(keys){let d=0,p=0,n=0;for(const k of keys){const[a,b]=prog[k]||[0,0];if(b){d+=b;p+=Math.min(a,b);if(isDone(a,b))n++}}return{pct:d?Math.round(p/d*100):0,left:d-p,n,tot:keys.length}}
 /* ---------- icons & placeholder covers ---------- */
-const IC={home:'M3 11l9-8 9 8v9a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z',book:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14zM20 17v4H6.5a2.5 2.5 0 0 1 0-5',list:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',sliders:'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',search:'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3',play:'M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z',pause:'M7 4h3.5v16H7zM13.5 4H17v16h-3.5z',prev:'M6 5h2v14H6zM20 5v14L9 12z',next:'M16 5h2v14h-2zM4 5v14l11-7z',rew:'M1 4v6h6M3.5 15a9 9 0 1 0 2.1-9.4L1 10',fwd:'M23 4v6h-6M20.5 15a9 9 0 1 1-2.1-9.4L23 10',chevd:'M6 9l6 6 6-6',chevu:'M18 15l-6-6-6 6',chevl:'M15 18l-6-6 6-6',chevr:'M9 18l6-6-6-6',bookmark:'M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z',moon:'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',zap:'M13 2L3 14h9l-1 8 10-12h-9z',folder:'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z',plus:'M12 5v14M5 12h14',filep:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M12 18v-6M9 15h6',x:'M18 6L6 18M6 6l12 12',headphones:'M3 18v-6a9 9 0 0 1 18 0v6M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z',wave:'M4 10v4M8 6v12M12 3v18M16 7v10M20 10v4',drive:'M22 12H2M5.5 5.1L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1zM6 16h.01M10 16h.01',music:'M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',check:'M20 6L9 17l-5-5',grid:'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',layers:'M12 2l10 5-10 5L2 7zM2 17l10 5 10-5M2 12l10 5 10-5'};
+const IC={home:'M3 11l9-8 9 8v9a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z',book:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14zM20 17v4H6.5a2.5 2.5 0 0 1 0-5',list:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',sliders:'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',search:'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3',play:'M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z',pause:'M7 4h3.5v16H7zM13.5 4H17v16h-3.5z',prev:'M6 5h2v14H6zM20 5v14L9 12z',next:'M16 5h2v14h-2zM4 5v14l11-7z',rew:'M1 4v6h6M3.5 15a9 9 0 1 0 2.1-9.4L1 10',fwd:'M23 4v6h-6M20.5 15a9 9 0 1 1-2.1-9.4L23 10',chevd:'M6 9l6 6 6-6',chevu:'M18 15l-6-6-6 6',chevl:'M15 18l-6-6 6-6',chevr:'M9 18l6-6-6-6',bookmark:'M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z',moon:'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',zap:'M13 2L3 14h9l-1 8 10-12h-9z',folder:'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z',plus:'M12 5v14M5 12h14',filep:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M12 18v-6M9 15h6',x:'M18 6L6 18M6 6l12 12',headphones:'M3 18v-6a9 9 0 0 1 18 0v6M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z',wave:'M4 10v4M8 6v12M12 3v18M16 7v10M20 10v4',drive:'M22 12H2M5.5 5.1L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1zM6 16h.01M10 16h.01',music:'M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',check:'M20 6L9 17l-5-5',grid:'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',layers:'M12 2l10 5-10 5L2 7zM2 17l10 5 10-5M2 12l10 5 10-5',repeat:'M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3',queue:'M3 6h13M3 12h13M3 18h7M18 14v8M14 18h8',lock:'M7 11V7a5 5 0 0 1 10 0v4M5 11h14v10H5z'};
 const FILLED={play:1,pause:1,prev:1,next:1},EM={'📁':'folder','🎧':'headphones','🔊':'wave','📖':'book','🔖':'bookmark','💾':'drive','🎵':'music'};
 const ico=n=>`<svg class="i${n==='chevl'||n==='chevr'?' flip':''}" viewBox="0 0 24 24" ${FILLED[n]?'fill="currentColor"':'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'}><path d="${IC[n]}"/></svg>`;
 const hueOf=s=>{let x=0;s=String(s);for(let i=0;i<s.length;i++)x=(x*31+s.charCodeAt(i))>>>0;return x%360};
@@ -595,6 +618,8 @@ function initUI(){
  $('#bSpeed span').innerHTML=ico('zap');$('#bSleep span').innerHTML=ico('moon');$('#bMark span').innerHTML=ico('bookmark');$('#bChap span').innerHTML=ico('list');
  document.querySelectorAll('#tabs button').forEach(b=>{b.querySelector('.ti').innerHTML=ico({home:'home',lib:'book',pl:'list'}[b.dataset.v])});
  $('#bFiles').onclick=()=>openSheet('files');$('#pStop').onclick=$('#mClose').onclick=closePlayback;$('#vtog').onclick=toggleView;
+ $('#bRepeat').onclick=cycleRepeat;$('#bQueue').onclick=()=>openSheet('queue');$('#bLock').onclick=()=>setLock(true);
+ shuttle($('#bBack'),-1,'b');shuttle($('#bFwd'),1,'f');initLock();
  $('#bGear').onclick=()=>show('set');$('#bBackS').onclick=()=>show(prevTab||'home');
  $('#bSearch').onclick=()=>{show('lib');setTimeout(()=>$('#q').focus(),60)};
 }
@@ -618,7 +643,7 @@ function row(ic,title,sub,pct,fn,btns=[],tk,opt){
   if(pct>0&&opt.stt!==2){const i=mk('i');i.style.width=pct+'%';cv.append(i)}
   if(opt.stt!=null)cv.append(badge(opt.stt,pct));
   if(kind){const fo=mk('span',null,'fo');fo.innerHTML=ico('folder');cv.append(fo)}
-  g.append(cv,mk('div',title,'ct'),mk('div',sub,'cs'));g.onclick=fn;return g;
+  g.append(cv,mk('div',title,'ct'),mk('div',sub,'cs'));g.onclick=fn;if(opt.item)longPress(g,()=>openSheet('item',opt.item));return g;
  }
  const d=mk('div',null,'row'),u=tk&&thumbs[tk],tl=mk('div',null,'tl '+kind);
  if(u){const i=mk('img');i.alt='';i.src=u;tl.append(i)}
@@ -626,7 +651,7 @@ function row(ic,title,sub,pct,fn,btns=[],tk,opt){
  if(opt.stt!=null)tl.append(badge(opt.stt,pct));
  const tx=mk('div',null,'tx');tx.append(mk('b',title),mk('small',sub));
  if(pct>=0){const bar=mk('i'),u2=mk('u');u2.style.width=pct+'%';bar.append(u2);tx.append(bar)}
- d.append(tl,tx);d.onclick=fn;
+ d.append(tl,tx);d.onclick=fn;if(opt.item)longPress(d,()=>openSheet('item',opt.item));
  for(const[l,f]of btns){const b=mk('button');if(l.charAt(0)==='<')b.innerHTML=l;else b.textContent=l;b.onclick=e=>{e.stopPropagation();f()};d.append(b)}
  return d;
 }
@@ -671,7 +696,7 @@ function fileRow(k,list,showDir,when,grid){
  wantThumb(thumbKey(k),k);
  const info=b?(isDone(a,b)?t('finished',fmt(b)):`${pct}% · ${t('left',fmt(b-a))}`):t('notPlayed');
  const meta=[when?ago(when):'',showDir?folderName(k):'',f.s?fsz(f.s):'',f.m?new Date(f.m).toLocaleDateString(cfg.lang==='ar'?'ar-u-nu-latn':'en'):''].filter(Boolean);
- return row(k===key&&!au.paused?'🔊':'🎧',nm(k),[info,...meta].join(' · '),pct,()=>play(k,list),[],thumbKey(k),{grid,stt:fst(k)});
+ return row(k===key&&!au.paused?'🔊':'🎧',nm(k),[info,...meta].join(' · '),pct,()=>play(k,list),[],thumbKey(k),{grid,stt:fst(k),item:{type:'file',k,n:nm(k)}});
 }
 /* lazy list: only renders pages of rows as the user scrolls */
 function pager(L,items,make,sig){
@@ -695,6 +720,7 @@ const COV=/^(cover|folder|front|albumart.*)\.(jpe?g|png|webp)$/i;
 function go(c){cur=c;q='';$('#q').value='';history.pushState({t:'lib',c,p:0},'');renderLib()}
 addEventListener('popstate',e=>{
  const st=e.state||{t:'home',c:[],p:0};
+ if(plocked&&playerOpen){history.pushState({t:tab,c:cur,p:1},'');toast(t('lockedHint'));return}
  if(sheetName){closeSheet();history.pushState({t:tab,c:cur,p:playerOpen?1:0},'');return}
  if(playerOpen){closePlayerUI();return}
  cur=st.c||[];q='';$('#q').value='';
@@ -715,7 +741,7 @@ function renderSearch(L,X,sig,qq){
  for(const k in lib.files){const F=lib.files[k];if(!F._n)F._n=norm(F.n);if(F._n.includes(nq)&&(W<0||fst(k)===W))fl.push(k)}
  if(!ds.length&&!fl.length){L.append(empty('noResults'));return}
  ds.sort((a,b)=>col(a.m.name,b.m.name));fl.sort((a,b)=>col(nm(a),nm(b)));
- pager(L,[...ds,...fl.map(k=>({k}))],it=>it.d?(wantThumb(it.d.path,it.d.keys[0]),row('📁',it.d.n,folderSub(it.m.s),it.m.s.pct,()=>go(it.d.path.split('/')),[],it.d.path,{grid:G,stt:it.m.stt})):fileRow(it.k,fl,true,undefined,G),sig);
+ pager(L,[...ds,...fl.map(k=>({k}))],it=>it.d?(wantThumb(it.d.path,it.d.keys[0]),row('📁',it.d.n,folderSub(it.m.s),it.m.s.pct,()=>go(it.d.path.split('/')),[],it.d.path,{grid:G,stt:it.m.stt,item:{type:'book',d:it.d.path,n:it.d.n}})):fileRow(it.k,fl,true,undefined,G),sig);
 }
 function renderFbar(){
  const C=$('#fchips');C.innerHTML='';
@@ -754,16 +780,16 @@ function renderExplorer(){
   const ds=dirs.map(d=>({d,m:metr(d.keys,d.name)})).filter(x=>W<0||x.m.stt===W).sort((x,y)=>cp(x.m,y.m));
   const fr=files.map(k=>({k,m:metr([k],nm(k))})).filter(x=>W<0||x.m.stt===W).sort((x,y)=>cp(x.m,y.m)),fl=fr.map(x=>x.k);
   if(!ds.length&&!fl.length){L.append(empty('noneFilter'));return}
-  pager(L,[...ds,...fl.map(k=>({k}))],it=>it.d?(it.d.r?rootRow(it.d.r,()=>go([it.d.r.id])):(wantThumb([...cur,it.d.n].join('/'),it.d.keys[0]),row('📁',it.d.name,folderSub(it.m.s)+(it.m.sz?' · '+fsz(it.m.sz):''),it.m.s.pct,()=>go([...cur,it.d.n]),[],[...cur,it.d.n].join('/'),{grid:G,stt:it.m.stt}))):fileRow(it.k,fl,false,undefined,G),sig);
+  pager(L,[...ds,...fl.map(k=>({k}))],it=>it.d?(it.d.r?rootRow(it.d.r,()=>go([it.d.r.id])):(wantThumb([...cur,it.d.n].join('/'),it.d.keys[0]),row('📁',it.d.name,folderSub(it.m.s)+(it.m.sz?' · '+fsz(it.m.sz):''),it.m.s.pct,()=>go([...cur,it.d.n]),[],[...cur,it.d.n].join('/'),{grid:G,stt:it.m.stt,item:{type:'book',d:[...cur,it.d.n].join('/'),n:it.d.name}}))):fileRow(it.k,fl,false,undefined,G),sig);
  }catch(e){L.innerHTML='';L.append(empty('oops'))}finally{if(keep)M.scrollTop=st}
 }
-const PILLS=[['prog','fProg'],['done','fDone'],['new','fNew'],['recent','fRecent'],['marks','marks']];
+const PILLS=[['prog','fProg'],['done','fDone'],['new','fNew'],['recent','fRecent'],['queue','upNext'],['history','history'],['stats','stats'],['marks','marks']];
 function bookResume(keys){
  const ks=keys.slice().sort(col);let best=null,bt=-1;
  for(const k of ks)if(fst(k)===1){const ts=(prog[k]&&prog[k][2])||0;if(ts>bt){best=k;bt=ts}}
  return best||ks.find(k=>fst(k)!==2)||ks[0];
 }
-const bookRow=b=>(wantThumb(b.d,b.keys[0]),row('📖',b.m.name,folderSub(b.m.s)+(b.m.sz?' · '+fsz(b.m.sz):''),b.m.s.pct,()=>play(bookResume(b.keys),b.keys.slice().sort(col)),[[ico('chevr'),()=>{go(b.d.split('/'));show('lib')}]],b.d));
+const bookRow=b=>(wantThumb(b.d,b.keys[0]),row('📖',b.m.name,folderSub(b.m.s)+(b.m.sz?' · '+fsz(b.m.sz):''),b.m.s.pct,()=>play(bookResume(b.keys),b.keys.slice().sort(col)),[[ico('chevr'),()=>{go(b.d.split('/'));show('lib')}]],b.d,{stt:b.m.stt,item:{type:'book',d:b.d,n:b.m.name}}));
 function clrBtn(){
  const b=mk('button',t('clrHist'));b.style.cssText='width:100%;min-height:44px;margin:6px 0';
  b.onclick=()=>{if(!confirm(t('confirmHist')))return;for(const k in prog){const p=prog[k];if(p&&p[2])prog[k]=[p[0],p[1]]}saveProg(true);renderLib()};
@@ -778,14 +804,17 @@ function renderPlaylists(){
  const sc=sortOf('pl:'+pl),sig='p|'+pl+'|'+sc.k+sc.d+cfg.lang,keep=pgS.sig===sig,st=M.scrollTop;
  try{
   C.innerHTML='';
-  const cnt={prog:n[1],done:n[2],new:n[0],recent:rec,marks:marks.length};
+  const cnt={prog:n[1],done:n[2],new:n[0],recent:rec,marks:marks.length,queue:queueUp.length,history:hist.length,stats:null};
   PILLS.forEach(([v,lk])=>{
-   const b=mk('button',null,'pill'+(pl===v?' on':''));b.append(document.createTextNode(t(lk)+' '),mk('em',cnt[v]));
+   const b=mk('button',null,'pill'+(pl===v?' on':''));b.append(document.createTextNode(t(lk)+(cnt[v]!=null?' ':'')),cnt[v]!=null?mk('em',cnt[v]):document.createTextNode(''));
    b.onclick=()=>{plAuto=false;if(pl!==v){pl=v;renderLib()}};C.append(b);
   });
   try{const on=C.querySelector('.on');if(on&&!keep)on.scrollIntoView({inline:'center',block:'nearest'})}catch{}
   L.innerHTML='';
   if(!keep){L.classList.remove('fade');void L.offsetWidth;L.classList.add('fade')}
+  if(pl==='queue'){const w=mk('div');L.append(w);buildQueue(w,()=>renderLib());return}
+  if(pl==='history')return renderHistory(L,sig);
+  if(pl==='stats'){renderStats(L);return}
   if(pl==='marks'){const w=mk('div');L.append(w);renderMarkList(w,null);return}
   if(pl==='recent'){
    const rs=[];for(const k in lib.files){const ts=prog[k]&&prog[k][2];if(ts)rs.push({k,ts})}
@@ -825,7 +854,8 @@ function card(b){
  if(b.m.stt===1&&b.m.pct>0){const i=mk('i');i.style.width=b.m.pct+'%';cv.append(i)}
  const lf=b.m.s.left>1?' · '+t('left',fmt(b.m.s.left)):'';
  const sub=b.m.stt===1?b.m.pct+'%'+lf:b.m.stt===2?t('fDone'):(b.keys.length>1?t('nFiles',b.keys.length):(b.m.sz?fsz(b.m.sz):''));
- d.append(cv,mk('div',b.name,'ct'),mk('div',sub,'cs'));d.onclick=()=>playBook(b);return d;
+ d.append(cv,mk('div',b.name,'ct'),mk('div',sub,'cs'));d.onclick=()=>playBook(b);
+ longPress(d,()=>openSheet('item',b.keys.length===1&&lib.files[b.d]?{type:'file',k:b.d,n:b.name}:{type:'book',d:b.d,n:b.name}));return d;
 }
 function heroEl(b,lab){
  wantThumb(b.tk,b.keys[0]);
@@ -894,7 +924,7 @@ function acc(id,title,build){
 }
 function exportBackup(){
  const f={};for(const k in lib.files){const F=lib.files[k];f[k]=[F.s==null?null:F.s,F.m==null?null:F.m]}
- const data={app:'ab-player',v:1,at:Date.now(),cfg,prog,marks,last,lib:{roots:lib.roots.map(r=>({id:r.id,name:r.name,fs:r.fs?1:undefined})),f}};
+ const data={app:'ab-player',v:1,at:Date.now(),cfg,prog,marks,last,queue:queueUp,hist,stats,lib:{roots:lib.roots.map(r=>({id:r.id,name:r.name,fs:r.fs?1:undefined})),f}};
  const u=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'})),a=mk('a');
  a.href=u;a.download='audiobook-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();
  setTimeout(()=>URL.revokeObjectURL(u),4000);toast(t('exported'));
@@ -906,7 +936,7 @@ $('#fBak').onchange=async e=>{
   if(!d||d.app!=='ab-player'||!d.lib||!Array.isArray(d.lib.roots)||!d.lib.f)throw 0;
   if(!confirm(t('confirmImport')))return;
   noFlush=true;
-  SV('ab_cfg',Object.assign({},cfg,d.cfg||{}));SV('ab_prog',d.prog||{});SV('ab_bm',Array.isArray(d.marks)?d.marks:[]);SV('ab_last',d.last||null);SV('ab_lib2',{roots:d.lib.roots,f:d.lib.f});
+  SV('ab_cfg',Object.assign({},cfg,d.cfg||{}));SV('ab_prog',d.prog||{});SV('ab_bm',Array.isArray(d.marks)?d.marks:[]);SV('ab_last',d.last||null);SV('ab_queue',Array.isArray(d.queue)?d.queue:[]);SV('ab_hist',Array.isArray(d.hist)?d.hist:[]);SV('ab_stats',d.stats&&d.stats.days?d.stats:{days:{},tw:0,tc:0});SV('ab_lib2',{roots:d.lib.roots,f:d.lib.f});
   toast(t('importOk'));setTimeout(()=>location.reload(),700);
  }catch{noFlush=false;toast(t('importBad'))}
 };
@@ -921,6 +951,7 @@ function renderSettings(){
   b.append(mk('h3',t('skipF')),seg(SK.map(n=>[n,t('sec',n)]),cfg.fwd,v=>{cfg.fwd=v;saveCfg();buildSkips();renderSettings()}));
   const lb=mk('label'),cb=mk('input');cb.type='checkbox';cb.checked=cfg.fade;cb.onchange=()=>{cfg.fade=cb.checked;saveCfg()};lb.append(cb,document.createTextNode(t('fade')));b.append(lb);
   const ls=mk('label'),cs=mk('input');cs.type='checkbox';cs.checked=cfg.smartRw;cs.onchange=()=>{cfg.smartRw=cs.checked;saveCfg()};ls.append(cs,document.createTextNode(t('smartRw')));b.append(ls);
+  const lg=mk('label'),cg=mk('input');cg.type='checkbox';cg.checked=cfg.bgPlay;cg.onchange=()=>{cfg.bgPlay=cg.checked;saveCfg()};lg.append(cg,document.createTextNode(t('bgPlay')));b.append(lg);
   b.append(mk('h3',t('notifBtns')),seg([['tracks',t('notifTracks')],['seek',t('notifSeek')],['tracksClose',t('notifTC')]],cfg.notif,v=>{cfg.notif=v;saveCfg();applyMediaActions();renderSettings()}));
  }));
  V.append(acc('storage',t('secStorage'),b=>{
@@ -988,10 +1019,10 @@ SH.files=function(b){
  });
  b.append(L);setTimeout(()=>{const c=L.querySelector('.cur');if(c)c.scrollIntoView({block:'center'})},320);
 };
-function openSheet(n){
+function openSheet(n,arg){
  if((n==='marks'||n==='chap'||n==='files')&&!key)return toast(t('pickFile'));
- sheetName=n;$('#shT').textContent=t({speed:'speed',sleep:'sleep',marks:'bm',chap:'chap',files:'folderFiles'}[n]);
- const b=$('#shB');b.innerHTML='';SH[n](b);const s=$('#sheet');s.hidden=false;
+ sheetName=n;$('#shT').textContent=n==='item'?(arg.n||''):t({speed:'speed',sleep:'sleep',marks:'bm',chap:'chap',files:'folderFiles',queue:'upNext'}[n]);
+ const b=$('#shB');b.innerHTML='';SH[n](b,arg);const s=$('#sheet');s.hidden=false;
  requestAnimationFrame(()=>requestAnimationFrame(()=>s.classList.add('open')));
 }
 function closeSheet(){const s=$('#sheet');s.classList.remove('open');sheetName=null;setTimeout(()=>{if(!sheetName)s.hidden=true},300)}
@@ -1008,8 +1039,9 @@ function updateTools(){
 /* ---------- playback & player UI ---------- */
 function save(){if(noFlush)return;if(key&&isFinite(au.duration)&&au.duration>0){prog[key]=[au.currentTime,au.duration,Date.now()];saveProg();SV('ab_last',key)}}
 setInterval(()=>{if(!au.paused){save();if((tab==='pl'||tab==='home')&&!playerOpen)renderLib()}},5000);
-addEventListener('pagehide',()=>{save();flush()});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){save();flush()}else renderLib()});
+addEventListener('pagehide',()=>{save();sessFlush();flush()});
+setInterval(()=>{if(!au.paused)sessFlush()},30000);
+document.addEventListener('visibilitychange',()=>{if(document.hidden){save();sessFlush();flush();if(!cfg.bgPlay&&!au.paused)au.pause()}else renderLib()});
 function openPlayer(){if(playerOpen)return;playerOpen=true;$('#player').classList.add('open');history.pushState({t:tab,c:cur,p:1},'');updateMini()}
 function closePlayerUI(){playerOpen=false;$('#player').classList.remove('open');updateMini()}
 function updateMini(){$('#mini').hidden=!key||playerOpen}
@@ -1018,7 +1050,7 @@ async function play(k,q2,startAt,auto=true,open=true){
  const rid=lib.files[k]&&lib.files[k].r;if(rid&&auto)await ensureRoot(rid);
  const f=await getFile(k);
  if(!f){if(auto)toast(t('notLinked'));return}
- save();key=k;queue=q2&&q2.includes(k)?q2:siblings(k);qi=queue.indexOf(k);last=k;SV('ab_last',k);
+ save();sessFlush();key=k;sessOpen(k);queue=q2&&q2.includes(k)?q2:siblings(k);qi=queue.indexOf(k);last=k;SV('ab_last',k);
  const p=prog[k]||[0,0],pos=startAt!=null?startAt:(isDone(p[0],p[1])?0:p[0]);
  pausedAt=(startAt==null&&p[2]&&pos>0)?p[2]:0;
  if(objUrl)URL.revokeObjectURL(objUrl);
@@ -1030,16 +1062,161 @@ async function play(k,q2,startAt,auto=true,open=true){
 }
 function jump(m){if(key===m.k){au.currentTime=m.t;au.play()}else play(m.k,siblings(m.k),m.t,true,false);openPlayer()}
 const skip=n=>{au.currentTime=Math.max(0,Math.min(au.duration||0,au.currentTime+n))};
-function next(){if(qi<queue.length-1)play(queue[qi+1],queue,undefined,true,false)}
+function next(){if(qi<queue.length-1)play(queue[qi+1],queue,undefined,true,false);else popUpNext()}
 function prevFile(){if(qi>0)play(queue[qi-1],queue,undefined,true,false);else au.currentTime=0}
 function prev(){if(au.currentTime>3||qi<1)au.currentTime=0;else play(queue[qi-1],queue,undefined,true,false)}
 function stepFolder(d){const sibs=siblings(key),i=sibs.indexOf(key),k=sibs[i+d];if(k)play(k,sibs,undefined,true,false)}
 /* stop playback, release the audio element and dismiss the OS media notification */
+/* ---------- repeat modes, up-next queue, history & stats, lock, shuttle ---------- */
+const ymd=d=>{const x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0')};
+const dur=sec=>{sec=Math.round(sec);if(sec<60)return sec+t('unitS');const h=sec/3600|0,m=Math.floor(sec%3600/60);return h?h+t('unitH')+' '+String(m).padStart(2,'0')+t('unitM'):m+t('unitM')};
+const saveH=()=>SV('ab_hist',hist),saveS=()=>SV('ab_stats',stats),saveQ=()=>SV('ab_queue',queueUp);
+let sess=null,lastStatT=0;
+function sessOpen(k){sess={k,s:Date.now(),w:0,c:0};lastStatT=0}
+function statTick(){            // wall-clock based, so it stays accurate when timers are throttled in the background
+ if(!sess||au.paused){lastStatT=0;return}
+ const n=Date.now();
+ if(lastStatT){const d=Math.min(2,(n-lastStatT)/1000);sess.w+=d;sess.c+=d*(au.playbackRate||1)}
+ lastStatT=n;
+}
+function sessFlush(){
+ if(noFlush||!sess||sess.w<3)return;
+ const x=sess,now=Date.now(),day=ymd(now),d=stats.days[day]||(stats.days[day]=[0,0]);
+ d[0]+=x.w;d[1]+=x.c;stats.tw+=x.w;stats.tc+=x.c;
+ const L=hist[0];
+ if(L&&L.k===x.k&&x.s-L.e<90000){L.w+=Math.round(x.w);L.c+=Math.round(x.c);L.e=now}
+ else hist.unshift({k:x.k,s:x.s,e:now,w:Math.round(x.w),c:Math.round(x.c)});
+ if(hist.length>600)hist.length=600;
+ const ks=Object.keys(stats.days).sort();while(ks.length>400)delete stats.days[ks.shift()];
+ x.w=0;x.c=0;x.s=now;saveH();saveS();
+}
+
+/* repeat: off -> episode (loop this file) -> book (loop inside this folder) -> all (loop the whole queue) */
+function cycleRepeat(){
+ const m=['off','episode','book','all'];cfg.repeat=m[(m.indexOf(cfg.repeat)+1)%4];saveCfg();updateModes();
+ toast(t({off:'repeatOff',episode:'repeatEp',book:'repeatBook',all:'repeatAll'}[cfg.repeat]));
+}
+function advance(){
+ const mode=cfg.repeat;
+ if(mode==='episode'){play(key,queue,0,true,false);return}
+ if(mode==='book'){const sib=siblings(key),i=sib.indexOf(key);play(sib[i<sib.length-1?i+1:0],sib,i<sib.length-1?undefined:0,true,false);return}
+ if(qi<queue.length-1){play(queue[qi+1],queue,undefined,true,false);return}
+ if(popUpNext())return;
+ if(mode==='all'&&queue.length)play(queue[0],queue,0,true,false);
+}
+
+/* up next queue (books and episodes) */
+const qSame=(a,b)=>a.type===b.type&&(a.d||a.k)===(b.d||b.k);
+const qKeys=it=>it.type==='book'?(idx().all.get(it.d)||[]).slice().sort(col):(lib.files[it.k]?[it.k]:[]);
+function qAdd(item,next){
+ queueUp=queueUp.filter(x=>!qSame(x,item));
+ if(next)queueUp.unshift(item);else queueUp.push(item);
+ saveQ();toast(t(next?'queuedNext':'queued'));updateModes();if(tab==='pl'&&pl==='queue')renderLib();
+}
+function startItem(it){
+ const keys=qKeys(it);if(!keys.length)return false;
+ const k=it.type==='book'?bookResume(keys):keys[0];
+ play(k,it.type==='book'?keys:siblings(k),undefined,true,false);return true;
+}
+function popUpNext(){
+ while(queueUp.length){const it=queueUp.shift();saveQ();if(startItem(it)){updateModes();return true}}
+ updateModes();return false;
+}
+function buildQueue(C,after){
+ C.innerHTML='';
+ if(!queueUp.length){C.append(empty('queueEmpty'));return}
+ const hd=mk('div',null,'add'),cl=mk('button',t('clearQueue'));cl.onclick=()=>{queueUp=[];saveQ();updateModes();after()};hd.append(cl);C.append(hd);
+ queueUp.forEach((it,i)=>{
+  const keys=qKeys(it);
+  C.append(row(it.type==='book'?'📖':'🎧',it.n||'—',it.type==='book'?t('nFiles',keys.length):(keys[0]?folderName(keys[0]):''),-1,
+   ()=>{const x=queueUp.splice(i,1)[0];saveQ();updateModes();after(true);startItem(x)},
+   [[ico('chevu'),()=>{if(i>0){[queueUp[i-1],queueUp[i]]=[queueUp[i],queueUp[i-1]];saveQ();after()}}],[ico('x'),()=>{queueUp.splice(i,1);saveQ();updateModes();after()}]],
+   it.type==='book'?it.d:(keys[0]?thumbKey(keys[0]):'')));
+ });
+}
+SH.queue=function(b){const L=mk('div');b.append(L);const refresh=close=>{if(close===true){closeSheet();return}buildQueue(L,refresh)};refresh()};
+SH.item=function(b,it){
+ const add=(lbl,icn,fn)=>{const x=mk('button');x.innerHTML=ico(icn)+'<span>'+lbl+'</span>';x.style.cssText='width:100%;justify-content:flex-start;margin:6px 0';x.onclick=()=>{closeSheet();fn()};b.append(x)};
+ add(t('playNow'),'play',()=>startItem(it));
+ add(t('playNext'),'next',()=>qAdd(it,true));
+ add(t('addQueue'),'queue',()=>qAdd(it,false));
+ if(queueUp.some(x=>qSame(x,it)))add(t('removeQueue'),'x',()=>{queueUp=queueUp.filter(x=>!qSame(x,it));saveQ();updateModes();renderLib()});
+};
+function longPress(el,fn){
+ let tm=0,x0=0,y0=0,fired=false;
+ const off=()=>clearTimeout(tm);
+ el.addEventListener('pointerdown',e=>{fired=false;x0=e.clientX;y0=e.clientY;off();tm=setTimeout(()=>{fired=true;try{navigator.vibrate&&navigator.vibrate(20)}catch(e){}fn()},520)});
+ el.addEventListener('pointermove',e=>{if(Math.abs(e.clientX-x0)>10||Math.abs(e.clientY-y0)>10)off()});
+ ['pointerup','pointercancel','pointerleave'].forEach(ev=>el.addEventListener(ev,off));
+ el.addEventListener('contextmenu',e=>e.preventDefault());
+ el.addEventListener('click',e=>{if(fired){e.stopImmediatePropagation();e.preventDefault();fired=false}},true);
+}
+
+/* history + statistics views (inside the Playlists tab) */
+function renderHistory(L,sig){
+ const items=[{c:1}],loc=cfg.lang==='ar'?'ar-u-nu-latn':'en',d0=new Date();d0.setHours(0,0,0,0);let lb='';
+ for(const e of hist){
+  if(!lib.files[e.k])continue;
+  const bk=e.s>=d0?'today':e.s>=d0-864e5?'yesterday':ymd(e.s);
+  if(bk!==lb){items.push({h:bk});lb=bk}items.push({e});
+ }
+ if(items.length===1){L.append(empty('histEmpty'));return}
+ return pager(L,items,it=>{
+  if(it.c){const b=mk('button',t('clrHistAll'));b.style.cssText='width:100%;min-height:44px;margin:6px 0';b.onclick=()=>{if(!confirm(t('confirmHistAll')))return;hist=[];stats={days:{},tw:0,tc:0};saveH();saveS();renderLib()};return b}
+  if(it.h)return mk('h3',['today','yesterday'].indexOf(it.h)>=0?t(it.h):it.h);
+  const e=it.e,sp=e.w>0&&e.c/e.w>1.05?' · ×'+(e.c/e.w).toFixed(2):'',q=prog[e.k]||[0,0],pc=q[1]?Math.round(q[0]/q[1]*100):0;
+  return row('🎧',nm(e.k),new Date(e.s).toLocaleTimeString(loc,{hour:'2-digit',minute:'2-digit'})+' · '+dur(e.w)+sp+' · '+folderName(e.k),pc,()=>play(e.k,null),[],thumbKey(e.k),{stt:fst(e.k),item:{type:'file',k:e.k,n:nm(e.k)}});
+ },sig);
+}
+function renderStats(L){
+ sessFlush();
+ const now=new Date(),days=[];for(let i=6;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);days.push(d)}
+ const val=d=>(stats.days[ymd(d)]||[0,0])[0];
+ const week=days.reduce((a,d)=>a+val(d),0),today=val(now);
+ let streak=0;const c=new Date(now);if(!val(c))c.setDate(c.getDate()-1);while(val(c)>0&&streak<4000){streak++;c.setDate(c.getDate()-1)}
+ const active=Object.values(stats.days).filter(v=>v[0]>0).length,avg=active?stats.tw/active:0;
+ let eps=0;for(const k in lib.files)if(fst(k)===2)eps++;
+ const books=bookInfo().filter(b=>b.keys.length>1&&b.m.stt===2).length;
+ const cards=[[t('statTotal'),dur(stats.tw)],[t('statToday'),dur(today)],[t('stat7'),dur(week)],[t('statStreak'),streak+' '+t('statDays')],[t('statBooks'),books],[t('statFiles'),eps],[t('statAvg'),dur(avg)],[t('statSaved'),dur(Math.max(0,stats.tc-stats.tw))]];
+ const g=mk('div',null,'sgrid');cards.forEach(([l,v])=>{const x=mk('div',null,'sc');x.append(mk('b',v),mk('small',l));g.append(x)});L.append(g);
+ const mx=Math.max(1,...days.map(val)),ch=mk('div',null,'chart');
+ days.forEach(d=>{const col2=mk('div'),b=mk('i');b.style.height=Math.max(3,val(d)/mx*100)+'%';b.title=dur(val(d));col2.append(b,mk('small',d.toLocaleDateString(cfg.lang==='ar'?'ar':'en',{weekday:'narrow'})));ch.append(col2)});L.append(ch);
+ const by={};for(const e of hist){const k=lib.files[e.k]?thumbKey(e.k):null;if(k)by[k]=(by[k]||0)+e.w}
+ const top=Object.entries(by).sort((a,b)=>b[1]-a[1]).slice(0,5);
+ if(top.length){L.append(mk('h3',t('statTop')));const m=top[0][1];top.forEach(([k,w])=>{const nmv=k.includes('/')?k.slice(k.lastIndexOf('/')+1):rootName(k);L.append(row('📖',nmv,dur(w),Math.round(w/m*100),()=>{go(k.split('/'));show('lib')},[],k))})}
+}
+
+/* lock: ignore every touch on the player until the screen is held for 1.2 s */
+let plocked=false;
+function setLock(v){plocked=v;$('#plock').hidden=!v;$('#player').classList.toggle('locked',v);if(v)toast(t('locked'));updateModes()}
+function initLock(){
+ const ov=$('#plock'),bar=ov.querySelector('.ring');let tm=0;
+ const stop=()=>{clearTimeout(tm);bar.style.transition='none';bar.style.width='0'};
+ ov.addEventListener('pointerdown',e=>{e.preventDefault();bar.style.transition='none';bar.style.width='0';void bar.offsetWidth;bar.style.transition='width 1.2s linear';bar.style.width='100%';clearTimeout(tm);tm=setTimeout(()=>{stop();setLock(false);try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}},1200)});
+ ['pointerup','pointercancel','pointerleave'].forEach(ev=>ov.addEventListener(ev,stop));
+ ov.addEventListener('contextmenu',e=>e.preventDefault());
+}
+/* shuttle: hold the skip buttons to scrub faster and faster */
+function shuttle(btn,dir,flag){
+ let tm=0,iv=0,held=false;
+ const stop=()=>{clearTimeout(tm);clearInterval(iv);iv=0;btn.classList.remove('hold')};
+ btn.addEventListener('pointerdown',()=>{held=false;clearTimeout(tm);tm=setTimeout(()=>{held=true;shut[flag]=true;btn.classList.add('hold');let n=0;try{navigator.vibrate&&navigator.vibrate(15)}catch(e){}
+  iv=setInterval(()=>{n++;const sp=n<6?5:n<14?15:n<24?40:90;au.currentTime=Math.max(0,Math.min(au.duration||0,au.currentTime+dir*sp))},200)},380)});
+ ['pointerup','pointercancel','pointerleave'].forEach(ev=>btn.addEventListener(ev,()=>{stop()}));
+ btn.addEventListener('contextmenu',e=>e.preventDefault());
+}
+function updateModes(){
+ const r=cfg.repeat,rb=$('#bRepeat');
+ rb.querySelector('span').innerHTML=ico('repeat')+(r==='episode'?'<i>1</i>':r==='book'?'<i>B</i>':r==='all'?'<i>∞</i>':'');
+ rb.querySelector('small').textContent=t({off:'repeatOff',episode:'repeatEp',book:'repeatBook',all:'repeatAll'}[r]);rb.classList.toggle('on',r!=='off');
+ const qb=$('#bQueue');qb.querySelector('span').innerHTML=ico('queue');qb.querySelector('small').textContent=queueUp.length?t('upNext')+' · '+queueUp.length:t('upNext');qb.classList.toggle('on',queueUp.length>0);
+ const lb=$('#bLock');lb.querySelector('span').innerHTML=ico('lock');lb.querySelector('small').textContent=t('lock');
+}
 function closePlayback(){
- save();flush();au.pause();
+ save();sessFlush();flush();au.pause();setLock(false);
  if(objUrl){URL.revokeObjectURL(objUrl);objUrl=null}
  au.removeAttribute('src');au.load();
- key=null;last=null;SV('ab_last',null);chapters=[];queue=[];qi=-1;setSleep('off');
+ key=null;last=null;SV('ab_last',null);chapters=[];queue=[];qi=-1;setSleep('off');sess=null;
  if('mediaSession'in navigator){try{navigator.mediaSession.metadata=null;navigator.mediaSession.playbackState='none'}catch{}}
  $('#ttl').textContent=t('nothing');$('#sub').textContent=t('pickFile');$('#chName').textContent='';
  setCover(art);
@@ -1048,9 +1225,9 @@ function closePlayback(){
 }
 const toggle=()=>{if(!key)return toast(t('pickFile'));au.paused?au.play():au.pause()};
 au.onended=()=>{
- if(key&&au.duration)prog[key]=[au.duration,au.duration,Date.now()];saveProg();
+ if(key&&au.duration)prog[key]=[au.duration,au.duration,Date.now()];saveProg();sessFlush();
  if(sleep&&sleep.track){au.volume=1;sleep=null;tickSleep();renderLib();return}
- next();
+ advance();
 };
 let pausedAt=0;
 function smartRewind(){
@@ -1064,11 +1241,12 @@ function syncPlayState(){
  if('mediaSession'in navigator)navigator.mediaSession.playbackState=p?'playing':'paused';
  if(!p)save();renderLib();
 }
-au.onpause=()=>{if(!au.ended&&au.currentTime>0)pausedAt=Date.now();syncPlayState()};
+au.onpause=()=>{if(!au.ended&&au.currentTime>0)pausedAt=Date.now();sessFlush();syncPlayState()};
 au.onplay=()=>{smartRewind();syncPlayState()};
 
 au.onerror=()=>toast(t('cantPlay'));
 function tick(){
+ statTick();
  const d=au.duration||0,c=au.currentTime||0;
  if(!drag){$('#seek').max=d;$('#seek').value=c;$('#seek').style.setProperty('--p',(d?c/d*100:0)+'%');$('#tCur').textContent=fmt(c)}
  $('#tTot').textContent=fmt(d);$('#tRem').textContent=d?`${Math.round(c/d*100)}% · ${t('left',fmt(d-c))}`:'';
@@ -1085,7 +1263,10 @@ let mdrag=false,mLast=0;
 $('#mSeek').oninput=e=>{mdrag=true;const v=+e.target.value,d=au.duration||1;e.target.style.setProperty('--p',(v/d*100)+'%');$('#mCur').textContent=fmt(v);const n=Date.now();if(n-mLast>120){mLast=n;au.currentTime=v}};
 $('#mSeek').onchange=e=>{au.currentTime=+e.target.value;mdrag=false};
 $('#bPlay').onclick=$('#mPlay').onclick=toggle;$('#bNext').onclick=next;$('#bPrev').onclick=prev;
-$('#bBack').onclick=$('#mBack').onclick=()=>skip(-cfg.back);$('#bFwd').onclick=$('#mFwd').onclick=()=>skip(cfg.fwd);
+const shut={b:false,f:false};
+$('#mBack').onclick=()=>skip(-cfg.back);$('#mFwd').onclick=()=>skip(cfg.fwd);
+$('#bBack').onclick=()=>{if(shut.b){shut.b=false;return}skip(-cfg.back)};
+$('#bFwd').onclick=()=>{if(shut.f){shut.f=false;return}skip(cfg.fwd)};
 $('#mInfo').onclick=$('#mOpen').onclick=openPlayer;
 
 au.preservesPitch=true;
