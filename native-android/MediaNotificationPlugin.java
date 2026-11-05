@@ -70,6 +70,15 @@ public class MediaNotificationPlugin extends Plugin {
     call.resolve();
   }
 
+  /** Back pressed on the first screen: hide the app if audio is loaded (keeps playing), otherwise close it. */
+  @PluginMethod
+  public void leave(PluginCall call) {
+    getActivity().runOnUiThread(() -> {
+      if (PlaybackService.isRunning()) getActivity().moveTaskToBack(true); else getActivity().finish();
+    });
+    call.resolve();
+  }
+
   @PluginMethod
   public void stop(PluginCall call) {
     PlaybackService.stop(getContext());
