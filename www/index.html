@@ -277,7 +277,7 @@ button:disabled{opacity:.4;pointer-events:none}
 
 <script>
 'use strict';
-const $=s=>document.querySelector(s),au=$('#au'),VER='11.0';
+const $=s=>document.querySelector(s),au=$('#au'),VER='12.0';
 
 const LS=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},SV=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch{if(!SV.w){SV.w=1;setTimeout(()=>{toast(t('quota'));SV.w=0},0)}return false}};
 function loadLib(){
@@ -307,8 +307,8 @@ if(cfg.notifV!==2){cfg.notif='tracks';cfg.notifV=2}
 if(['all','new','prog','done'].indexOf(cfg.libFilter)<0)cfg.libFilter='all';
 const saveCfg=()=>SV('ab_cfg',cfg);
 
-const I={en:{appName:'Audiobook Player',lib:'Library',play:'Player',marks:'Bookmarks',set:'Settings',addFolder:'+ Folder',addFiles:'Files',home:'Home',none:'No audiobooks yet.\nAdd a folder from internal storage or an SD card.',emptyDir:'Empty folder.',folderAll:'Folder overall: {0}% · {1}/{2} done',left:'{0} left',needsRe:'Needs reconnect · progress is kept',reconnect:'Reconnect',notPlayed:'Not played',finished:'Finished · {0}',nothing:'Nothing playing',pickFile:'Pick a file from your library',speed:'Speed',sleep:'Sleep timer',bm:'Bookmarks',chap:'Chapters',off:'Off',endTrack:'End of track',min:'{0} min',sec:'{0}s',fade:'Fade volume out before stopping',notePh:'Note (optional)',add:'Add',markAdded:'Bookmarked at {0}',noMarks:'No bookmarks yet.\nOpen the player and tap Bookmarks.',noMarksHere:'No bookmarks for this file.',noChap:'No chapters in this file.',loose:'Loose files',confirmRm:'Remove "{0}" from the library? Your files are not touched.',notLinked:'File not linked. Reconnect its folder.',cantPlay:'Cannot play this file',cantRead:'Cannot read that folder',noAudio:'No audio files found',sleepSet:'Sleep timer set',lang:'Language',theme:'Theme',tAuto:'Auto',tLight:'Light',tDark:'Dark',skipB:'Skip back',skipF:'Skip forward',storage:'Storage & folders',usage:'Browser storage used: {0}',rescan:'Re-scan folders',clearP:'Clear all progress',confirmClr:'Erase saved progress for every file?',info:'App info',ver:'Version {0}',install:'Install app',getSw:'Download sw.js',swNote:'For installable offline use, host index.html over HTTPS with sw.js next to it.',pickerYes:'This browser can remember folders between sessions.',pickerNo:'This browser cannot remember folders. Re-select them after a restart; progress is kept.',scanned:'Library updated',cleared:'Progress cleared',back:'Back',all:'All',fProg:'In progress',fDone:'Completed',fNew:'New',books:'Books',filesT:'Files',noneFilter:'Nothing here yet.',s_name:'Name',s_size:'Size',s_date:'Last modified',s_prog:'Progress',s_stat:'Status',d_name0:'A → Z',d_name1:'Z → A',d_size0:'Smallest first',d_size1:'Largest first',d_date0:'Oldest first',d_date1:'Newest first',d_prog0:'Lowest first',d_prog1:'Highest first',d_stat0:'Unplayed first',d_stat1:'Completed first',scanning:'Scanning… {0} files found',indexing:'Indexing… {0} / {1}',stop:'Stop',tooMany:'Large folder: the first {0} audio files were added. For best performance, add big libraries one subfolder at a time.',blocked:'The browser blocked access to this folder. Please choose a subfolder (for example a single book) instead.',skipped:'{0} folders could not be read and were skipped.',oops:'Something went wrong. Your library and progress are safe.',quota:'Browser storage is almost full. Remove folders or clear progress.',bg:'Analyze durations in the background',stopped:'Scan stopped. Your existing library was kept.',pls:'Playlists',search:'Search books and files…',fRecent:'Recently played',nowPlaying:'Now playing',reconBanner:'Folders need permission. Tap to reconnect ({0})',secAppearance:'Appearance',secPlayback:'Playback',secStorage:'Storage & folders',secBackup:'Backup & restore',secAbout:'About',export:'Export backup (JSON)',import:'Restore from backup',confirmImport:'Restore this backup? Current progress, bookmarks and settings will be replaced.',importOk:'Backup restored',importBad:'This is not a valid backup file.',exported:'Backup saved',noResults:'No matches.',s_last:'Last played',d_last0:'Oldest first',d_last1:'Newest first',today:'Today',yesterday:'Yesterday',earlier:'Earlier',clrHist:'Clear history',confirmHist:'Clear the recently-played history? Your progress is kept.',noRecent:'Nothing played yet.',tHome:'Home',badgeNew:'NEW',notifTest:'Test notification',notifSettings:'Notification settings',notifOn:'notifications ON',notifOff:'notifications OFF',svcOn:'service running',svcOff:'service stopped',notifAsk:'Notifications are turned off for this app. Open settings?',notifBtns:'Notification buttons',notifSeek:'Skip + close',notifTracks:'Episodes + skip',notifTC:'Episodes + close',repeatOff:'Repeat off',repeatEp:'Repeat episode',repeatBook:'Repeat book',repeatAll:'Repeat all',upNext:'Up next',playNow:'Play now',playNext:'Play next',addQueue:'Add to queue',removeQueue:'Remove from queue',clearQueue:'Clear queue',queueEmpty:'The queue is empty.\nLong-press a book or episode to add it.',queued:'Added to queue',queuedNext:'Will play next',lock:'Lock',locked:'Player locked',holdUnlock:'Hold to unlock',lockedHint:'Player is locked. Hold the screen to unlock.',history:'History',stats:'Stats',histEmpty:'No listening history yet.',clrHistAll:'Clear history',confirmHistAll:'Erase the whole listening history and statistics?',statTotal:'Total listening',statToday:'Today',stat7:'Last 7 days',statStreak:'Day streak',statBooks:'Books completed',statFiles:'Episodes completed',statAvg:'Daily average',statSaved:'Time saved by speed',statTop:'Most listened',statDays:'days',unitH:'h',unitM:'m',unitS:'s',bgPlay:'Keep playing in the background',smartRw:'Smart rewind when resuming',coversLbl:'Extract cover art from files',viewList:'List view',viewGrid:'Grid view',folderFiles:'Folder files',prevFile:'Previous',nextFile:'Next',stopClose:'Stop and close',root:'All folders',gMorning:'Good morning',gAfternoon:'Good afternoon',gEvening:'Good evening',contHero:'Continue listening',startHero:'Start listening',seeAll:'See all',nFiles:'{0} files',homeEmptyT:'Your library is empty',homeEmptyS:'Add a folder with audiobooks to get started.',backupNote:'Backups contain progress, bookmarks, settings and the library index (not your audio files). After restoring on a new device, reconnect your folders.'},
-ar:{appName:'مشغّل الكتب الصوتية',lib:'المكتبة',play:'المشغّل',marks:'العلامات',set:'الإعدادات',addFolder:'+ مجلد',addFiles:'ملفات',home:'الرئيسية',none:'لا توجد كتب صوتية بعد.\nأضف مجلدًا من التخزين الداخلي أو بطاقة الذاكرة.',emptyDir:'المجلد فارغ.',folderAll:'إجمالي المجلد: {0}% · أُنجز {1} من {2}',left:'متبقي {0}',needsRe:'يحتاج إعادة ربط · التقدم محفوظ',reconnect:'إعادة الربط',notPlayed:'لم يُشغَّل',finished:'انتهى · {0}',nothing:'لا شيء قيد التشغيل',pickFile:'اختر ملفًا من مكتبتك',speed:'السرعة',sleep:'مؤقت النوم',bm:'العلامات',chap:'الفصول',off:'إيقاف',endTrack:'نهاية المقطع',min:'{0} دقيقة',sec:'{0} ث',fade:'خفض الصوت تدريجيًا قبل الإيقاف',notePh:'ملاحظة (اختياري)',add:'إضافة',markAdded:'تمت إضافة علامة عند {0}',noMarks:'لا توجد علامات بعد.\nافتح المشغّل واضغط على العلامات.',noMarksHere:'لا توجد علامات لهذا الملف.',noChap:'لا توجد فصول في هذا الملف.',loose:'ملفات منفردة',confirmRm:'إزالة «{0}» من المكتبة؟ ملفاتك لن تُحذف.',notLinked:'الملف غير مرتبط. أعد ربط مجلده.',cantPlay:'تعذّر تشغيل هذا الملف',cantRead:'تعذّرت قراءة هذا المجلد',noAudio:'لم يتم العثور على ملفات صوتية',sleepSet:'تم ضبط مؤقت النوم',lang:'اللغة',theme:'المظهر',tAuto:'تلقائي',tLight:'فاتح',tDark:'داكن',skipB:'التراجع',skipF:'التقديم',storage:'التخزين والمجلدات',usage:'المساحة المستخدمة في المتصفح: {0}',rescan:'إعادة فحص المجلدات',clearP:'مسح كل التقدم',confirmClr:'حذف التقدم المحفوظ لكل الملفات؟',info:'معلومات التطبيق',ver:'الإصدار {0}',install:'تثبيت التطبيق',getSw:'تنزيل sw.js',swNote:'للتثبيت والعمل دون اتصال، ضع index.html على استضافة HTTPS ومعه sw.js في المجلد نفسه.',pickerYes:'يمكن لهذا المتصفح تذكّر المجلدات بين الجلسات.',pickerNo:'لا يستطيع هذا المتصفح تذكّر المجلدات. أعد اختيارها بعد إعادة التشغيل؛ التقدم محفوظ.',scanned:'تم تحديث المكتبة',cleared:'تم مسح التقدم',back:'رجوع',all:'الكل',fProg:'قيد الاستماع',fDone:'المكتملة',fNew:'الجديدة',books:'الكتب',filesT:'الملفات',noneFilter:'لا يوجد شيء هنا بعد.',s_name:'الاسم',s_size:'الحجم',s_date:'آخر تعديل',s_prog:'التقدم',s_stat:'الحالة',d_name0:'أ ← ي',d_name1:'ي ← أ',d_size0:'الأصغر أولًا',d_size1:'الأكبر أولًا',d_date0:'الأقدم أولًا',d_date1:'الأحدث أولًا',d_prog0:'الأقل تقدمًا أولًا',d_prog1:'الأعلى تقدمًا أولًا',d_stat0:'الجديدة أولًا',d_stat1:'المكتملة أولًا',scanning:'جارٍ الفحص… تم العثور على {0} ملف',indexing:'جارٍ الفهرسة… {0} / {1}',stop:'إيقاف',tooMany:'مجلد كبير: أُضيفت أول {0} ملفًا صوتيًا. للحصول على أفضل أداء أضف المكتبات الكبيرة مجلدًا فرعيًا في كل مرة.',blocked:'منع المتصفح الوصول إلى هذا المجلد. اختر مجلدًا فرعيًا (مثل كتاب واحد) بدلًا منه.',skipped:'تعذّرت قراءة {0} مجلد وتم تخطيها.',oops:'حدث خطأ ما. مكتبتك وتقدمك بأمان.',quota:'مساحة تخزين المتصفح شبه ممتلئة. احذف مجلدات أو امسح التقدم.',bg:'تحليل المدد في الخلفية',stopped:'تم إيقاف الفحص. بقيت مكتبتك الحالية كما هي.',pls:'قوائم التشغيل',search:'ابحث في الكتب والملفات…',fRecent:'المشغّلة مؤخرًا',nowPlaying:'قيد التشغيل',reconBanner:'المجلدات تحتاج إلى إذن. اضغط لإعادة الربط ({0})',secAppearance:'المظهر',secPlayback:'التشغيل',secStorage:'التخزين والمجلدات',secBackup:'النسخ الاحتياطي والاستعادة',secAbout:'حول التطبيق',export:'تصدير نسخة احتياطية (JSON)',import:'استعادة من نسخة احتياطية',confirmImport:'استعادة هذه النسخة؟ سيتم استبدال التقدم والعلامات والإعدادات الحالية.',importOk:'تمت استعادة النسخة',importBad:'هذا ليس ملف نسخة احتياطية صالحًا.',exported:'تم حفظ النسخة الاحتياطية',noResults:'لا توجد نتائج.',s_last:'آخر تشغيل',d_last0:'الأقدم أولًا',d_last1:'الأحدث أولًا',today:'اليوم',yesterday:'أمس',earlier:'سابقًا',clrHist:'مسح السجل',confirmHist:'مسح سجل المشغَّل مؤخرًا؟ سيبقى تقدمك محفوظًا.',noRecent:'لم يتم تشغيل شيء بعد.',tHome:'الرئيسية',badgeNew:'جديد',notifTest:'اختبار الإشعار',notifSettings:'إعدادات الإشعارات',notifOn:'الإشعارات مفعّلة',notifOff:'الإشعارات متوقفة',svcOn:'الخدمة تعمل',svcOff:'الخدمة متوقفة',notifAsk:'الإشعارات متوقفة لهذا التطبيق. فتح الإعدادات؟',notifBtns:'أزرار الإشعار',notifSeek:'تقديم/تأخير + إغلاق',notifTracks:'الحلقات + تقديم/تأخير',notifTC:'الحلقات + إغلاق',repeatOff:'التكرار متوقف',repeatEp:'تكرار الحلقة',repeatBook:'تكرار الكتاب',repeatAll:'تكرار الكل',upNext:'طابور الكتب',playNow:'تشغيل الآن',playNext:'تشغيل التالي',addQueue:'إضافة إلى الطابور',removeQueue:'إزالة من الطابور',clearQueue:'مسح الطابور',queueEmpty:'الطابور فارغ.\nاضغط مطولًا على كتاب أو حلقة لإضافتها.',queued:'أُضيف إلى الطابور',queuedNext:'سيُشغَّل بعد الحالي',lock:'قفل',locked:'تم قفل المشغّل',holdUnlock:'اضغط مطولًا لفتح القفل',lockedHint:'المشغّل مقفل. اضغط مطولًا على الشاشة لفتحه.',history:'السجل',stats:'الإحصائيات',histEmpty:'لا يوجد سجل استماع بعد.',clrHistAll:'مسح السجل',confirmHistAll:'حذف سجل الاستماع والإحصائيات بالكامل؟',statTotal:'إجمالي الاستماع',statToday:'اليوم',stat7:'آخر 7 أيام',statStreak:'أيام متتالية',statBooks:'كتب مكتملة',statFiles:'حلقات مكتملة',statAvg:'المتوسط اليومي',statSaved:'الوقت الموفَّر بالسرعة',statTop:'الأكثر استماعًا',statDays:'يوم',unitH:'س',unitM:'د',unitS:'ث',bgPlay:'متابعة التشغيل في الخلفية',smartRw:'رجوع ذكي عند الاستئناف',coversLbl:'استخراج صور الأغلفة من الملفات',viewList:'عرض قائمة',viewGrid:'عرض شبكي',folderFiles:'ملفات المجلد',prevFile:'السابق',nextFile:'التالي',stopClose:'إيقاف وإغلاق',root:'كل المجلدات',gMorning:'صباح الخير',gAfternoon:'نهارك سعيد',gEvening:'مساء الخير',contHero:'تابع الاستماع',startHero:'ابدأ الاستماع',seeAll:'عرض الكل',nFiles:'{0} ملف',homeEmptyT:'مكتبتك فارغة',homeEmptyS:'أضف مجلدًا يحتوي على كتب صوتية للبدء.',backupNote:'تحتوي النسخة على التقدم والعلامات والإعدادات وفهرس المكتبة (دون ملفاتك الصوتية). بعد الاستعادة على جهاز جديد أعد ربط المجلدات.'}};
+const I={en:{appName:'Audiobook Player',lib:'Library',play:'Player',marks:'Bookmarks',set:'Settings',addFolder:'+ Folder',addFiles:'Files',home:'Home',none:'No audiobooks yet.\nAdd a folder from internal storage or an SD card.',emptyDir:'Empty folder.',folderAll:'Folder overall: {0}% · {1}/{2} done',left:'{0} left',needsRe:'Needs reconnect · progress is kept',reconnect:'Reconnect',notPlayed:'Not played',finished:'Finished · {0}',nothing:'Nothing playing',pickFile:'Pick a file from your library',speed:'Speed',sleep:'Sleep timer',bm:'Bookmarks',chap:'Chapters',off:'Off',endTrack:'End of track',min:'{0} min',sec:'{0}s',fade:'Fade volume out before stopping',notePh:'Note (optional)',add:'Add',markAdded:'Bookmarked at {0}',noMarks:'No bookmarks yet.\nOpen the player and tap Bookmarks.',noMarksHere:'No bookmarks for this file.',noChap:'No chapters in this file.',loose:'Loose files',confirmRm:'Remove "{0}" from the library? Your files are not touched.',notLinked:'File not linked. Reconnect its folder.',cantPlay:'Cannot play this file',cantRead:'Cannot read that folder',noAudio:'No audio files found',sleepSet:'Sleep timer set',lang:'Language',theme:'Theme',tAuto:'Auto',tLight:'Light',tDark:'Dark',skipB:'Skip back',skipF:'Skip forward',storage:'Storage & folders',usage:'Browser storage used: {0}',rescan:'Re-scan folders',clearP:'Clear all progress',confirmClr:'Erase saved progress for every file?',info:'App info',ver:'Version {0}',install:'Install app',getSw:'Download sw.js',swNote:'For installable offline use, host index.html over HTTPS with sw.js next to it.',pickerYes:'This browser can remember folders between sessions.',pickerNo:'This browser cannot remember folders. Re-select them after a restart; progress is kept.',scanned:'Library updated',cleared:'Progress cleared',back:'Back',all:'All',fProg:'In progress',fDone:'Completed',fNew:'New',books:'Books',filesT:'Files',noneFilter:'Nothing here yet.',s_name:'Name',s_size:'Size',s_date:'Last modified',s_prog:'Progress',s_stat:'Status',d_name0:'A → Z',d_name1:'Z → A',d_size0:'Smallest first',d_size1:'Largest first',d_date0:'Oldest first',d_date1:'Newest first',d_prog0:'Lowest first',d_prog1:'Highest first',d_stat0:'Unplayed first',d_stat1:'Completed first',scanning:'Scanning… {0} files found',indexing:'Indexing… {0} / {1}',stop:'Stop',tooMany:'Large folder: the first {0} audio files were added. For best performance, add big libraries one subfolder at a time.',blocked:'The browser blocked access to this folder. Please choose a subfolder (for example a single book) instead.',skipped:'{0} folders could not be read and were skipped.',oops:'Something went wrong. Your library and progress are safe.',quota:'Browser storage is almost full. Remove folders or clear progress.',bg:'Analyze durations in the background',stopped:'Scan stopped. Your existing library was kept.',pls:'Playlists',search:'Search books and files…',fRecent:'Recently played',nowPlaying:'Now playing',reconBanner:'Folders need permission. Tap to reconnect ({0})',secAppearance:'Appearance',secPlayback:'Playback',secStorage:'Storage & folders',secBackup:'Backup & restore',secAbout:'About',export:'Export backup (JSON)',import:'Restore from backup',confirmImport:'Restore this backup? Current progress, bookmarks and settings will be replaced.',importOk:'Backup restored',importBad:'This is not a valid backup file.',exported:'Backup saved',noResults:'No matches.',s_last:'Last played',d_last0:'Oldest first',d_last1:'Newest first',today:'Today',yesterday:'Yesterday',earlier:'Earlier',clrHist:'Clear history',confirmHist:'Clear the recently-played history? Your progress is kept.',noRecent:'Nothing played yet.',tHome:'Home',badgeNew:'NEW',notifTest:'Test notification',notifSettings:'Notification settings',notifOn:'notifications ON',notifOff:'notifications OFF',svcOn:'service running',svcOff:'service stopped',notifAsk:'Notifications are turned off for this app. Open settings?',notifBtns:'Notification buttons',notifSeek:'Skip + close',notifTracks:'Episodes + skip',notifTC:'Episodes + close',repeatOff:'Repeat off',repeatEp:'Repeat episode',repeatBook:'Repeat book',repeatAll:'Repeat all',upNext:'Up next',playNow:'Play now',playNext:'Play next',addQueue:'Add to queue',removeQueue:'Remove from queue',clearQueue:'Clear queue',queueEmpty:'The queue is empty.\nLong-press a book or episode to add it.',queued:'Added to queue',queuedNext:'Will play next',lock:'Lock',locked:'Player locked',holdUnlock:'Hold to unlock',lockedHint:'Player is locked. Hold the screen to unlock.',history:'History',stats:'Stats',histEmpty:'No listening history yet.',clrHistAll:'Clear history',confirmHistAll:'Erase the whole listening history and statistics?',statTotal:'Total listening',statToday:'Today',stat7:'Last 7 days',statStreak:'Day streak',statBooks:'Books completed',statFiles:'Episodes completed',statAvg:'Daily average',statSaved:'Time saved by speed',statTop:'Most listened',statDays:'days',unitH:'h',unitM:'m',unitS:'s',bgPlay:'Keep playing in the background',bkTitle:'Automatic backup folder',bkChoose:'Choose backup folder',bkNow:'Back up now',bkRestore:'Restore from backup folder',bkLast:'Last backup: {0}',bkNone:'Not set up yet',bkFail:'Backup failed. Check the folder.',bkNoFile:'No backup file found in that folder.',bkNote:'Pick a folder (for example on the SD card). The app saves its backup there automatically when you leave it, and the file stays after uninstalling.',smartRw:'Smart rewind when resuming',coversLbl:'Extract cover art from files',viewList:'List view',viewGrid:'Grid view',folderFiles:'Folder files',prevFile:'Previous',nextFile:'Next',stopClose:'Stop and close',root:'All folders',gMorning:'Good morning',gAfternoon:'Good afternoon',gEvening:'Good evening',contHero:'Continue listening',startHero:'Start listening',seeAll:'See all',nFiles:'{0} files',homeEmptyT:'Your library is empty',homeEmptyS:'Add a folder with audiobooks to get started.',backupNote:'Backups contain progress, bookmarks, settings and the library index (not your audio files). After restoring on a new device, reconnect your folders.'},
+ar:{appName:'مشغّل الكتب الصوتية',lib:'المكتبة',play:'المشغّل',marks:'العلامات',set:'الإعدادات',addFolder:'+ مجلد',addFiles:'ملفات',home:'الرئيسية',none:'لا توجد كتب صوتية بعد.\nأضف مجلدًا من التخزين الداخلي أو بطاقة الذاكرة.',emptyDir:'المجلد فارغ.',folderAll:'إجمالي المجلد: {0}% · أُنجز {1} من {2}',left:'متبقي {0}',needsRe:'يحتاج إعادة ربط · التقدم محفوظ',reconnect:'إعادة الربط',notPlayed:'لم يُشغَّل',finished:'انتهى · {0}',nothing:'لا شيء قيد التشغيل',pickFile:'اختر ملفًا من مكتبتك',speed:'السرعة',sleep:'مؤقت النوم',bm:'العلامات',chap:'الفصول',off:'إيقاف',endTrack:'نهاية المقطع',min:'{0} دقيقة',sec:'{0} ث',fade:'خفض الصوت تدريجيًا قبل الإيقاف',notePh:'ملاحظة (اختياري)',add:'إضافة',markAdded:'تمت إضافة علامة عند {0}',noMarks:'لا توجد علامات بعد.\nافتح المشغّل واضغط على العلامات.',noMarksHere:'لا توجد علامات لهذا الملف.',noChap:'لا توجد فصول في هذا الملف.',loose:'ملفات منفردة',confirmRm:'إزالة «{0}» من المكتبة؟ ملفاتك لن تُحذف.',notLinked:'الملف غير مرتبط. أعد ربط مجلده.',cantPlay:'تعذّر تشغيل هذا الملف',cantRead:'تعذّرت قراءة هذا المجلد',noAudio:'لم يتم العثور على ملفات صوتية',sleepSet:'تم ضبط مؤقت النوم',lang:'اللغة',theme:'المظهر',tAuto:'تلقائي',tLight:'فاتح',tDark:'داكن',skipB:'التراجع',skipF:'التقديم',storage:'التخزين والمجلدات',usage:'المساحة المستخدمة في المتصفح: {0}',rescan:'إعادة فحص المجلدات',clearP:'مسح كل التقدم',confirmClr:'حذف التقدم المحفوظ لكل الملفات؟',info:'معلومات التطبيق',ver:'الإصدار {0}',install:'تثبيت التطبيق',getSw:'تنزيل sw.js',swNote:'للتثبيت والعمل دون اتصال، ضع index.html على استضافة HTTPS ومعه sw.js في المجلد نفسه.',pickerYes:'يمكن لهذا المتصفح تذكّر المجلدات بين الجلسات.',pickerNo:'لا يستطيع هذا المتصفح تذكّر المجلدات. أعد اختيارها بعد إعادة التشغيل؛ التقدم محفوظ.',scanned:'تم تحديث المكتبة',cleared:'تم مسح التقدم',back:'رجوع',all:'الكل',fProg:'قيد الاستماع',fDone:'المكتملة',fNew:'الجديدة',books:'الكتب',filesT:'الملفات',noneFilter:'لا يوجد شيء هنا بعد.',s_name:'الاسم',s_size:'الحجم',s_date:'آخر تعديل',s_prog:'التقدم',s_stat:'الحالة',d_name0:'أ ← ي',d_name1:'ي ← أ',d_size0:'الأصغر أولًا',d_size1:'الأكبر أولًا',d_date0:'الأقدم أولًا',d_date1:'الأحدث أولًا',d_prog0:'الأقل تقدمًا أولًا',d_prog1:'الأعلى تقدمًا أولًا',d_stat0:'الجديدة أولًا',d_stat1:'المكتملة أولًا',scanning:'جارٍ الفحص… تم العثور على {0} ملف',indexing:'جارٍ الفهرسة… {0} / {1}',stop:'إيقاف',tooMany:'مجلد كبير: أُضيفت أول {0} ملفًا صوتيًا. للحصول على أفضل أداء أضف المكتبات الكبيرة مجلدًا فرعيًا في كل مرة.',blocked:'منع المتصفح الوصول إلى هذا المجلد. اختر مجلدًا فرعيًا (مثل كتاب واحد) بدلًا منه.',skipped:'تعذّرت قراءة {0} مجلد وتم تخطيها.',oops:'حدث خطأ ما. مكتبتك وتقدمك بأمان.',quota:'مساحة تخزين المتصفح شبه ممتلئة. احذف مجلدات أو امسح التقدم.',bg:'تحليل المدد في الخلفية',stopped:'تم إيقاف الفحص. بقيت مكتبتك الحالية كما هي.',pls:'قوائم التشغيل',search:'ابحث في الكتب والملفات…',fRecent:'المشغّلة مؤخرًا',nowPlaying:'قيد التشغيل',reconBanner:'المجلدات تحتاج إلى إذن. اضغط لإعادة الربط ({0})',secAppearance:'المظهر',secPlayback:'التشغيل',secStorage:'التخزين والمجلدات',secBackup:'النسخ الاحتياطي والاستعادة',secAbout:'حول التطبيق',export:'تصدير نسخة احتياطية (JSON)',import:'استعادة من نسخة احتياطية',confirmImport:'استعادة هذه النسخة؟ سيتم استبدال التقدم والعلامات والإعدادات الحالية.',importOk:'تمت استعادة النسخة',importBad:'هذا ليس ملف نسخة احتياطية صالحًا.',exported:'تم حفظ النسخة الاحتياطية',noResults:'لا توجد نتائج.',s_last:'آخر تشغيل',d_last0:'الأقدم أولًا',d_last1:'الأحدث أولًا',today:'اليوم',yesterday:'أمس',earlier:'سابقًا',clrHist:'مسح السجل',confirmHist:'مسح سجل المشغَّل مؤخرًا؟ سيبقى تقدمك محفوظًا.',noRecent:'لم يتم تشغيل شيء بعد.',tHome:'الرئيسية',badgeNew:'جديد',notifTest:'اختبار الإشعار',notifSettings:'إعدادات الإشعارات',notifOn:'الإشعارات مفعّلة',notifOff:'الإشعارات متوقفة',svcOn:'الخدمة تعمل',svcOff:'الخدمة متوقفة',notifAsk:'الإشعارات متوقفة لهذا التطبيق. فتح الإعدادات؟',notifBtns:'أزرار الإشعار',notifSeek:'تقديم/تأخير + إغلاق',notifTracks:'الحلقات + تقديم/تأخير',notifTC:'الحلقات + إغلاق',repeatOff:'التكرار متوقف',repeatEp:'تكرار الحلقة',repeatBook:'تكرار الكتاب',repeatAll:'تكرار الكل',upNext:'طابور الكتب',playNow:'تشغيل الآن',playNext:'تشغيل التالي',addQueue:'إضافة إلى الطابور',removeQueue:'إزالة من الطابور',clearQueue:'مسح الطابور',queueEmpty:'الطابور فارغ.\nاضغط مطولًا على كتاب أو حلقة لإضافتها.',queued:'أُضيف إلى الطابور',queuedNext:'سيُشغَّل بعد الحالي',lock:'قفل',locked:'تم قفل المشغّل',holdUnlock:'اضغط مطولًا لفتح القفل',lockedHint:'المشغّل مقفل. اضغط مطولًا على الشاشة لفتحه.',history:'السجل',stats:'الإحصائيات',histEmpty:'لا يوجد سجل استماع بعد.',clrHistAll:'مسح السجل',confirmHistAll:'حذف سجل الاستماع والإحصائيات بالكامل؟',statTotal:'إجمالي الاستماع',statToday:'اليوم',stat7:'آخر 7 أيام',statStreak:'أيام متتالية',statBooks:'كتب مكتملة',statFiles:'حلقات مكتملة',statAvg:'المتوسط اليومي',statSaved:'الوقت الموفَّر بالسرعة',statTop:'الأكثر استماعًا',statDays:'يوم',unitH:'س',unitM:'د',unitS:'ث',bgPlay:'متابعة التشغيل في الخلفية',bkTitle:'مجلد النسخ الاحتياطي التلقائي',bkChoose:'اختيار مجلد النسخ الاحتياطي',bkNow:'نسخ احتياطي الآن',bkRestore:'استعادة من مجلد النسخ',bkLast:'آخر نسخة: {0}',bkNone:'لم يتم الإعداد بعد',bkFail:'فشل النسخ الاحتياطي. تحقق من المجلد.',bkNoFile:'لا يوجد ملف نسخ احتياطي في هذا المجلد.',bkNote:'اختر مجلدًا (مثل بطاقة الذاكرة). يحفظ التطبيق نسخته هناك تلقائيًا عند خروجك منه، ويبقى الملف بعد حذف التطبيق.',smartRw:'رجوع ذكي عند الاستئناف',coversLbl:'استخراج صور الأغلفة من الملفات',viewList:'عرض قائمة',viewGrid:'عرض شبكي',folderFiles:'ملفات المجلد',prevFile:'السابق',nextFile:'التالي',stopClose:'إيقاف وإغلاق',root:'كل المجلدات',gMorning:'صباح الخير',gAfternoon:'نهارك سعيد',gEvening:'مساء الخير',contHero:'تابع الاستماع',startHero:'ابدأ الاستماع',seeAll:'عرض الكل',nFiles:'{0} ملف',homeEmptyT:'مكتبتك فارغة',homeEmptyS:'أضف مجلدًا يحتوي على كتب صوتية للبدء.',backupNote:'تحتوي النسخة على التقدم والعلامات والإعدادات وفهرس المكتبة (دون ملفاتك الصوتية). بعد الاستعادة على جهاز جديد أعد ربط المجلدات.'}};
 const t=(k,...a)=>String(I[cfg.lang][k]??I.en[k]??k).replace(/\{(\d)\}/g,(_,i)=>a[i]);
 
 /* ---------- state ---------- */
@@ -620,7 +620,7 @@ function initUI(){
  $('#bFiles').onclick=()=>openSheet('files');$('#pStop').onclick=$('#mClose').onclick=closePlayback;$('#vtog').onclick=toggleView;
  $('#bRepeat').onclick=cycleRepeat;$('#bQueue').onclick=()=>openSheet('queue');$('#bLock').onclick=()=>setLock(true);
  shuttle($('#bBack'),-1,'b');shuttle($('#bFwd'),1,'f');initLock();
- $('#bGear').onclick=()=>show('set');$('#bBackS').onclick=()=>show(prevTab||'home');
+ $('#bGear').onclick=()=>show('set');$('#bBackS').onclick=()=>navBack();
  $('#bSearch').onclick=()=>{show('lib');setTimeout(()=>$('#q').focus(),60)};
 }
 function greet(){const h=new Date().getHours();return t(h<12?'gMorning':h<18?'gAfternoon':'gEvening')}
@@ -717,15 +717,45 @@ function pager(L,items,make,sig){
 /* ---------- navigation, search, playlists ---------- */
 const norm=s=>String(s).toLowerCase().replace(/[\u064B-\u065F\u0670\u0640]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه');
 const COV=/^(cover|folder|front|albumart.*)\.(jpe?g|png|webp)$/i;
-function go(c){cur=c;q='';$('#q').value='';history.pushState({t:'lib',c,p:0},'');renderLib()}
-addEventListener('popstate',e=>{
- const st=e.state||{t:'home',c:[],p:0};
- if(plocked&&playerOpen){history.pushState({t:tab,c:cur,p:1},'');toast(t('lockedHint'));return}
- if(sheetName){closeSheet();history.pushState({t:tab,c:cur,p:playerOpen?1:0},'');return}
- if(playerOpen){closePlayerUI();return}
- cur=st.c||[];q='';$('#q').value='';
- show(st.t||'home',true);
-});
+/* ---------- navigation: own back stack + one permanent history "guard" entry, so every back press reaches the app ---------- */
+let navS=[{t:'home',c:[]}];
+const libChain=c=>{const r=[{t:'lib',c:[]}];for(let i=1;i<=c.length;i++)r.push({t:'lib',c:c.slice(0,i)});return r};
+function showTab(v){
+ tab=v;TABS.forEach(x=>$('#v-'+x).hidden=x!==v);
+ document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+ setBar();if(v!=='set')renderLib();
+ $('main').scrollTop=0;
+}
+function applyView(v){cur=v.c.slice();q='';$('#q').value='';showTab(v.t)}
+function navBack(){if(navS.length>1)navS.pop();applyView(navS[navS.length-1])}
+function show(v){                       // tab switches never pile up: Home -> tab is ONE step back from Home
+ const top=navS[navS.length-1];
+ if(v==='set'){if(top.t!=='set')navS.push({t:'set',c:[]})}
+ else if(v==='home')navS=[navS[0]];
+ else if(v==='lib'){if(top.t!=='lib')navS=[navS[0]].concat(libChain(cur))}
+ else if(top.t!==v)navS=[navS[0],{t:v,c:[]}];
+ showTab(v);
+}
+function go(c){                         // folder navigation: each level is one back step
+ const top=navS[navS.length-1];
+ if(top.t!=='lib')navS=[navS[0]].concat(libChain(c));
+ else{
+  while(navS.length>1&&navS[navS.length-1].t==='lib'&&navS[navS.length-1].c.length>c.length)navS.pop();
+  const t2=navS[navS.length-1];
+  if(!(t2.t==='lib'&&t2.c.length===c.length&&t2.c.every((x,i)=>x===c[i])))navS.push({t:'lib',c:c.slice()});
+ }
+ cur=c;q='';$('#q').value='';
+ if(tab!=='lib')showTab('lib');else renderLib();
+}
+function handleBack(){
+ if(plocked&&playerOpen){toast(t('lockedHint'));return true}
+ if(sheetName){closeSheet();return true}
+ if(playerOpen){closePlayerUI();return true}
+ if(navS.length>1){navBack();return true}
+ if(window.NativeMedia&&NativeMedia.leave){NativeMedia.leave();return true}   // first screen: hide the app, keep playing
+ return false;                                                                 // plain browser: let the page really go back
+}
+addEventListener('popstate',()=>{if(handleBack()||window.__native)history.pushState({g:1},'')});
 function renderRecon(){
  const n=booted?lib.roots.filter(r=>r.fs&&rootH[r.id]&&!live.has(r.id)).length:0,b=$('#recon');
  b.hidden=!n;if(n)b.textContent=t('reconBanner',n);
@@ -899,14 +929,6 @@ function renderMarkList(L,fk){
 const renderMarks=()=>{if(tab==='pl'&&pl==='marks')renderLib()};
 function render(){renderLib()}
 const TABS=['home','lib','pl','set'];
-function show(v,pop){
- if(!pop&&!(history.state&&history.state.t===v))history.pushState({t:v,c:cur,p:0},'');
- if(v!=='set')prevTab=v;
- tab=v;TABS.forEach(x=>$('#v-'+x).hidden=x!==v);
- document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
- setBar();if(v!=='set')renderLib();
- $('main').scrollTop=0;
-}
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>show(b.dataset.v));
 
 const SK=[5,10,15,30,60];
@@ -922,24 +944,45 @@ function acc(id,title,build){
  h.onclick=()=>{openSec=openSec===id?'':id;renderSettings()};
  const b=mk('div',null,'ab');w.append(h,b);if(openSec===id)build(b);return w;
 }
-function exportBackup(){
+function buildBackup(){
  const f={};for(const k in lib.files){const F=lib.files[k];f[k]=[F.s==null?null:F.s,F.m==null?null:F.m]}
- const data={app:'ab-player',v:1,at:Date.now(),cfg,prog,marks,last,queue:queueUp,hist,stats,lib:{roots:lib.roots.map(r=>({id:r.id,name:r.name,fs:r.fs?1:undefined})),f}};
- const u=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'})),a=mk('a');
+ return{app:'ab-player',v:1,at:Date.now(),cfg,prog,marks,last,queue:queueUp,hist,stats,lib:{roots:lib.roots.map(r=>({id:r.id,name:r.name,fs:r.fs?1:undefined,native:r.native?1:undefined,uri:r.uri})),f}};
+}
+function exportBackup(){
+ const u=URL.createObjectURL(new Blob([JSON.stringify(buildBackup())],{type:'application/json'})),a=mk('a');
  a.href=u;a.download='audiobook-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();
  setTimeout(()=>URL.revokeObjectURL(u),4000);toast(t('exported'));
 }
+async function restoreData(d,keep){
+ if(!d||d.app!=='ab-player'||!d.lib||!Array.isArray(d.lib.roots)||!d.lib.f){toast(t('importBad'));return}
+ if(!confirm(t('confirmImport')))return;
+ noFlush=true;
+ const c=Object.assign({},cfg,d.cfg||{});delete c.bkAt;delete c.bkSig;
+ if(keep){c.bkUri=keep.uri;c.bkName=keep.name}else{delete c.bkUri;delete c.bkName}
+ SV('ab_cfg',c);SV('ab_prog',d.prog||{});SV('ab_bm',Array.isArray(d.marks)?d.marks:[]);SV('ab_last',d.last||null);
+ SV('ab_queue',Array.isArray(d.queue)?d.queue:[]);SV('ab_hist',Array.isArray(d.hist)?d.hist:[]);SV('ab_stats',d.stats&&d.stats.days?d.stats:{days:{},tw:0,tc:0});
+ SV('ab_lib2',{roots:d.lib.roots,f:d.lib.f});
+ toast(t('importOk'));setTimeout(()=>location.reload(),700);
+}
 $('#fBak').onchange=async e=>{
  const f=e.target.files[0];e.target.value='';if(!f)return;
- try{
-  const d=JSON.parse(await f.text());
-  if(!d||d.app!=='ab-player'||!d.lib||!Array.isArray(d.lib.roots)||!d.lib.f)throw 0;
-  if(!confirm(t('confirmImport')))return;
-  noFlush=true;
-  SV('ab_cfg',Object.assign({},cfg,d.cfg||{}));SV('ab_prog',d.prog||{});SV('ab_bm',Array.isArray(d.marks)?d.marks:[]);SV('ab_last',d.last||null);SV('ab_queue',Array.isArray(d.queue)?d.queue:[]);SV('ab_hist',Array.isArray(d.hist)?d.hist:[]);SV('ab_stats',d.stats&&d.stats.days?d.stats:{days:{},tw:0,tc:0});SV('ab_lib2',{roots:d.lib.roots,f:d.lib.f});
-  toast(t('importOk'));setTimeout(()=>location.reload(),700);
- }catch{noFlush=false;toast(t('importBad'))}
+ try{await restoreData(JSON.parse(await f.text()))}catch{noFlush=false;toast(t('importBad'))}
 };
+/* automatic backup into a folder the user picked (works with SD cards; survives uninstalling) */
+const bkSig=()=>[Object.keys(prog).length,JSON.stringify(prog).length,marks.length,hist.length,queueUp.length,Math.round(stats.tw)].join('|');
+async function doBackup(manual){
+ if(!window.NativeFolders||!NativeFolders.writeBackup||!cfg.bkUri)return false;
+ try{
+  sessFlush();
+  await NativeFolders.writeBackup(cfg.bkUri,'audiobook-backup.json',JSON.stringify(buildBackup()));
+  cfg.bkAt=Date.now();cfg.bkSig=bkSig();saveCfg();if(manual)toast(t('exported'));return true;
+ }catch(e){if(manual)toast(t('bkFail'));return false}
+}
+function autoBackup(){
+ if(!cfg.bkUri||Date.now()-(cfg.bkAt||0)<180000||bkSig()===cfg.bkSig)return;
+ doBackup(false);
+}
+setInterval(autoBackup,600000);
 function renderSettings(){
  const V=$('#v-set'),M=$('main'),st=M.scrollTop;V.innerHTML='';
  V.append(acc('appearance',t('secAppearance'),b=>{
@@ -968,6 +1011,16 @@ function renderSettings(){
  V.append(acc('backup',t('secBackup'),b=>{
   const a=mk('div',null,'add'),e1=mk('button',t('export'),'on'),e2=mk('button',t('import'));
   e1.onclick=exportBackup;e2.onclick=()=>$('#fBak').click();a.append(e1,e2);b.append(a,mk('div',t('backupNote'),'info'));
+  if(window.NativeFolders&&NativeFolders.writeBackup){
+   b.append(mk('h3',t('bkTitle')));
+   b.append(mk('div',cfg.bkUri?(cfg.bkName||'')+' · '+(cfg.bkAt?t('bkLast',new Date(cfg.bkAt).toLocaleString(cfg.lang==='ar'?'ar-u-nu-latn':'en')):t('bkNone')):t('bkNone'),'info'));
+   const n=mk('div',null,'add'),c1=mk('button',t('bkChoose'),'on'),c2=mk('button',t('bkNow')),c3=mk('button',t('bkRestore'));
+   const quiet=e=>/cancel/i.test((e&&e.message)||'');
+   c1.onclick=async()=>{try{const r=await NativeFolders.pickBackupFolder(cfg.bkUri);cfg.bkUri=r.uri;cfg.bkName=r.name;saveCfg();await doBackup(true);renderSettings()}catch(e){if(!quiet(e))toast(t('bkFail'))}};
+   c2.onclick=async()=>{if(!cfg.bkUri)return toast(t('bkNone'));await doBackup(true);renderSettings()};
+   c3.onclick=async()=>{try{const r=await NativeFolders.pickBackupFolder(cfg.bkUri);const x=await NativeFolders.readBackup(r.uri,'audiobook-backup.json');if(!x||!x.data)return toast(t('bkNoFile'));await restoreData(JSON.parse(x.data),{uri:r.uri,name:r.name})}catch(e){if(!quiet(e))toast(t('bkNoFile'))}};
+   n.append(c1,c2,c3);b.append(n,mk('div',t('bkNote'),'info'));
+  }
  }));
  V.append(acc('about',t('secAbout'),b=>{
   b.append(mk('div',t('appName')+' · '+t('ver',VER),'info'));
@@ -1041,11 +1094,11 @@ function save(){if(noFlush)return;if(key&&isFinite(au.duration)&&au.duration>0){
 setInterval(()=>{if(!au.paused){save();if((tab==='pl'||tab==='home')&&!playerOpen)renderLib()}},5000);
 addEventListener('pagehide',()=>{save();sessFlush();flush()});
 setInterval(()=>{if(!au.paused)sessFlush()},30000);
-document.addEventListener('visibilitychange',()=>{if(document.hidden){save();sessFlush();flush();if(!cfg.bgPlay&&!au.paused)au.pause()}else renderLib()});
-function openPlayer(){if(playerOpen)return;playerOpen=true;$('#player').classList.add('open');history.pushState({t:tab,c:cur,p:1},'');updateMini()}
+document.addEventListener('visibilitychange',()=>{if(document.hidden){save();sessFlush();flush();autoBackup();if(!cfg.bgPlay&&!au.paused)au.pause()}else renderLib()});
+function openPlayer(){if(playerOpen)return;playerOpen=true;$('#player').classList.add('open');updateMini()}
 function closePlayerUI(){playerOpen=false;$('#player').classList.remove('open');updateMini()}
 function updateMini(){$('#mini').hidden=!key||playerOpen}
-$('#pClose').onclick=()=>{if(history.state&&history.state.p)history.back();else closePlayerUI()};
+$('#pClose').onclick=()=>closePlayerUI();
 async function play(k,q2,startAt,auto=true,open=true){
  const rid=lib.files[k]&&lib.files[k].r;if(rid&&auto)await ensureRoot(rid);
  const f=await getFile(k);
@@ -1220,7 +1273,7 @@ function closePlayback(){
  if('mediaSession'in navigator){try{navigator.mediaSession.metadata=null;navigator.mediaSession.playbackState='none'}catch{}}
  $('#ttl').textContent=t('nothing');$('#sub').textContent=t('pickFile');$('#chName').textContent='';
  setCover(art);
- if(playerOpen){if(history.state&&history.state.p)history.back();else closePlayerUI()}
+ if(playerOpen)closePlayerUI();
  updateMini();updateTools();tick();renderLib();
 }
 const toggle=()=>{if(!key)return toast(t('pickFile'));au.paused?au.play():au.pause()};
@@ -1409,7 +1462,7 @@ try{
  const ai=mk('link');ai.rel='apple-touch-icon';ai.href=art;document.head.append(ai);
  $('#cover').src=$('#mCov').src=art;
  if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
- history.replaceState({t:'home',c:[],p:0},'');
+ history.replaceState({g:0},'');history.pushState({g:1},'');
  initUI();applyTheme();applyLang();applyRate(cfg.rate);
  if(!window.__native&&'serviceWorker'in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('./sw.js').catch(()=>{});
  addEventListener('error',()=>busyOff());
