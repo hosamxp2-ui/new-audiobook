@@ -71,6 +71,7 @@ if (Capacitor.isNativePlatform()) {
   window.NativeMedia = {
     status: () => MediaNotification.status(),
     openSettings: () => MediaNotification.openSettings(),
+    leave: () => MediaNotification.leave(),
     test: async () => {
       await MediaNotification.update({ title: 'Notification test', artist: 'Audiobook Player',
         duration: 60000, position: 15000, rate: 1, playing: true, mode: window.__notifMode || 'tracks' });
@@ -86,6 +87,9 @@ if (Capacitor.isNativePlatform()) {
     hasAccess: (uri) => FolderAccess.hasAccess({ uri }),
     release: (uri) => FolderAccess.release({ uri }),
     cancel: () => FolderAccess.cancelScan(),
+    pickBackupFolder: (hint) => FolderAccess.pickBackupFolder({ hint: hint || '' }),
+    writeBackup: (uri, name, data) => FolderAccess.writeBackup({ uri, name, data }),
+    readBackup: (uri, name) => FolderAccess.readBackup({ uri, name }),
     baseUrl: () => basePromise || (basePromise = FolderAccess.baseUrl().then((r) => r.base)),
     async listAudio(uri, onChunk) {
       const id = String(Date.now());
