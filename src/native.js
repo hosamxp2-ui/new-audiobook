@@ -88,7 +88,7 @@ if (Capacitor.isNativePlatform()) {
     release: (uri) => FolderAccess.release({ uri }),
     cancel: () => FolderAccess.cancelScan(),
     pickBackupFolder: (hint) => FolderAccess.pickBackupFolder({ hint: hint || '' }),
-    writeBackup: (uri, name, data) => FolderAccess.writeBackup({ uri, name, data }),
+    writeBackup: (uri, name, data, mime) => FolderAccess.writeBackup({ uri, name, data, mime: mime || 'application/json' }),
     readBackup: (uri, name) => FolderAccess.readBackup({ uri, name }),
     baseUrl: () => basePromise || (basePromise = FolderAccess.baseUrl().then((r) => r.base)),
     async listAudio(uri, onChunk) {
