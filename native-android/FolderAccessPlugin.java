@@ -117,6 +117,7 @@ public class FolderAccessPlugin extends Plugin {
     String uriS = call.getString("uri");
     String name = call.getString("name", "audiobook-backup.json");
     String data = call.getString("data");
+    String mime = call.getString("mime", "application/json");
     if (uriS == null || data == null) { call.reject("uri and data required"); return; }
     try {
       android.content.ContentResolver cr = getContext().getContentResolver();
@@ -124,7 +125,7 @@ public class FolderAccessPlugin extends Plugin {
       Uri doc = findChild(cr, tree, name);
       if (doc == null) {
         Uri parent = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree));
-        doc = DocumentsContract.createDocument(cr, parent, "application/json", name);
+        doc = DocumentsContract.createDocument(cr, parent, mime, name);
       }
       if (doc == null) { call.reject("could not create file"); return; }
       try (OutputStream os = cr.openOutputStream(doc, "wt")) {
